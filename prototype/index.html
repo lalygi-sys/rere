@@ -399,22 +399,61 @@ body.dp-open .tbl tbody tr.pinned-divider td{background:transparent}
 .filter-backdrop{display:none}
 @media (max-width:1024px){.filter-backdrop{display:block}}
 
-/* Set Rebate Modal */
-.rebate-modal{width:500px}
+/* === REBATE SIDE PANEL === */
+/* Mirror of .filter-panel but anchored on the right side of the table. Opens from the right; pushes the table-card by adding margin-left:16px instead of margin-right. Reuses .filter-panel-header / .filter-panel-scroll / .filter-panel-footer styles inside so the visual language matches the filters panel exactly. */
+.rebate-panel{display:flex;flex:0 0 0;width:0;min-height:0;overflow:hidden;background:var(--c-surface);border:0 solid var(--c-border);border-radius:16px;transition:flex-basis .25s ease,width .25s ease,opacity .2s ease,border-width 0s linear .25s,margin-left 0s linear .25s;opacity:0;box-sizing:border-box;margin-left:0}
+.rebate-panel.open{flex:0 0 440px;width:440px;opacity:1;border-width:1px;margin-left:16px;transition:flex-basis .25s ease,width .25s ease,opacity .2s ease,border-width 0s linear 0s,margin-left 0s linear 0s}
+.rebate-panel-inner{width:440px;flex:1 1 auto;min-height:0;padding:0;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden}
+@media (max-width:1024px){
+  .rebate-panel{position:fixed;top:0;right:0;bottom:0;height:100vh;width:0;flex:none;z-index:90;border-radius:0;border:none;box-shadow:0 0 20px rgba(0,0,0,.15);margin-left:0}
+  .rebate-panel.open{width:min(440px,90vw);margin-left:0}
+  .rebate-panel-inner{width:min(440px,90vw)}
+}
+
+/* Set Rebate form (rendered inside .rebate-panel). The legacy `.rebate-modal{width:500px}` rule was removed alongside the overlay HTML — the panel is sized by `.rebate-panel.open{flex:0 0 440px}` instead. */
 .field-row{display:flex;gap:12px;margin-bottom:20px}
-.field-row>div{flex:1}
+/* min-width:0 lets each .field shrink below its own content's natural width — needed because the custom `.select-trigger` inside Time zone contains a long string like "(GMT+07:00) Western Indonesia Time" that would otherwise expand its parent past the 50/50 split and squeeze the sibling Time of payment field down to almost zero. Without this override, flex items default to `min-width:auto` (= content's intrinsic min width) and that breaks equal distribution as soon as any column has overflowing text. */
+.field-row>div{flex:1;min-width:0}
 .field label{display:block;font-size:12px;color:#6f6f6f;margin-bottom:6px}
-.field input,.field select{width:100%;padding:10px 14px;border:1.5px solid #d9d9d9;border-radius:8px;font-size:14px;font-family:inherit;outline:none;background:#fff;color:#161616}
+.field input,.field select{width:100%;padding:10px 14px;border:1.5px solid #d9d9d9;border-radius:8px;font-size:14px;font-family:inherit;outline:none;background:#fff;color:#161616;box-sizing:border-box}
 .field input:focus,.field select:focus{border-color:#1945ff}
+.field input[data-suffix]{padding-right:32px}
+.field .input-suffix{position:absolute;right:14px;bottom:11px;color:#525252;font-size:14px;pointer-events:none;line-height:1}
 .field select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
-.time-row{display:flex;align-items:flex-end;gap:8px}
-.pm-toggle{display:flex;border:1.5px solid #d9d9d9;border-radius:6px;overflow:hidden}
-.pm-toggle span{padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer}
-.pm-toggle span.on{background:#1945ff;color:#fff}
-.day-row{display:flex;gap:6px;margin-bottom:16px}
-.day-btn{width:48px;height:36px;border:1.5px solid #d9d9d9;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;font-family:inherit;color:#161616}
-.day-btn.on{background:#1945ff;color:#fff;border-color:#1945ff}
-.day-btn:hover{border-color:#999}
+
+/* Custom select component: a <button class="select-trigger"> styled identically to a native <select> (same border, padding, caret) plus a `.dropdown-menu` below it. Reuses the Export menu's open/close machinery (toggleExportMenu / closeAllExportMenus / click-outside via [aria-haspopup="menu"] + .dropdown-menu) — we just need an extra `.select-wrap` modifier that makes the wrapper full-width so the trigger fills its `.field` like a native select, and stretches the menu (`left:0;right:0`) to match. */
+.select-wrap{position:relative;display:block;width:100%}
+.select-wrap>.dropdown-menu{left:0;right:0;min-width:0;max-height:240px;overflow-y:auto;padding:6px}
+.select-wrap>.dropdown-menu .dropdown-item{min-height:36px;padding:8px 12px;border-radius:8px;font-size:14px}
+.select-wrap>.dropdown-menu .dropdown-item.selected{background:var(--c-primary-container);color:var(--c-on-primary-container);font-weight:600}
+.select-wrap>.dropdown-menu .dropdown-item.selected:hover{background:rgba(25,69,255,.12)}
+.select-trigger{width:100%;display:inline-flex;align-items:center;justify-content:flex-start;height:40px;padding:10px 36px 10px 14px;border:1.5px solid #d9d9d9;border-radius:8px;background:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;font-size:14px;font-family:inherit;color:#161616;text-align:left;cursor:pointer;outline:none;box-sizing:border-box;transition:border-color .12s}
+.select-trigger:hover{border-color:#999}
+.select-trigger:focus-visible,.select-trigger[aria-expanded="true"]{border-color:#1945ff}
+.select-trigger>.select-value{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Searchable combobox (used for "Time zone"): same visual shell as `.select-trigger` but the trigger is an <input>, so the user can type to filter the dropdown — important here because the IANA timezone list runs to dozens of items and a static dropdown becomes unscannable. Reuses .select-wrap so it picks up the full-width wrapper and stretched menu, then overrides cursor (text vs pointer), background-image alignment, and the .selected style to match the Figma reference: a checkmark on the right and brand-blue text instead of a filled background pill. The .dropdown-empty row is rendered by JS when no items match the typed query. Menu is widened past the input (min-width:320px) because timezone labels run to ~55 characters and would otherwise wrap to 3-4 lines per item inside a 193px-wide field; the right anchor is dropped so the menu can extend leftward when the .field sits near the right edge of the rebate panel. The .dropdown-item override removes the inherited min-height:36px (which caused tall wrapped labels to overflow neighbouring items) and switches to auto-height with comfortable vertical padding. */
+.combobox-wrap .combobox-trigger{width:100%;height:40px;padding:10px 36px 10px 14px;border:1.5px solid #d9d9d9;border-radius:8px;background:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;font-size:14px;font-family:inherit;color:#161616;outline:none;box-sizing:border-box;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;transition:border-color .12s;cursor:pointer}
+.combobox-wrap .combobox-trigger:hover{border-color:#999}
+.combobox-wrap .combobox-trigger:focus,.combobox-wrap .combobox-trigger[aria-expanded="true"]{border-color:#1945ff;cursor:text}
+.combobox-wrap>.dropdown-menu{right:auto;min-width:340px;max-width:calc(100vw - 32px);max-height:280px}
+.combobox-wrap>.dropdown-menu .dropdown-item{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;white-space:nowrap;line-height:20px;min-height:auto;padding:10px 12px}
+.combobox-wrap>.dropdown-menu .dropdown-item>span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.combobox-wrap>.dropdown-menu .dropdown-item .check-icon{flex-shrink:0;width:16px;height:16px;color:#1945ff;visibility:hidden}
+.combobox-wrap>.dropdown-menu .dropdown-item.selected{background:transparent;color:#1945ff;font-weight:600}
+.combobox-wrap>.dropdown-menu .dropdown-item.selected:hover{background:rgba(25,69,255,.08)}
+.combobox-wrap>.dropdown-menu .dropdown-item.selected .check-icon{visibility:visible}
+.combobox-wrap>.dropdown-menu .dropdown-empty{padding:12px;font-size:14px;color:#6f6f6f;text-align:center}
+
+/* "Time of payment" field renders the time input and the PM/AM toggle as a single composite control — the toggle (a 2-item radiogroup built from the DS `.chip` component) lives visually INSIDE the input's border. That's done by stripping the inner <input>'s own border / padding / background and letting the wrapping `.time-input` div paint the bordered shell instead. The shell paints its own focus ring via `:focus-within`, so tabbing into either the time input or the chips highlights the whole control. */
+.time-input{display:flex;align-items:center;gap:8px;border:1.5px solid #d9d9d9;border-radius:8px;background:#fff;padding:4px 4px 4px 14px;height:40px;box-sizing:border-box;transition:border-color .12s}
+.time-input:focus-within{border-color:#1945ff}
+.time-input>input{flex:1 1 auto;min-width:0;border:none;padding:0;background:transparent;outline:none;font-size:14px;font-family:inherit;color:#161616;height:auto}
+.time-period{margin-left:0;gap:4px;flex-shrink:0}
+.time-period .chip{height:30px;padding:0 10px;font-size:13px;line-height:18px}
+/* The "Payment day of the week" selector inside the rebate panel reuses the toolbar's `.chips-group` + `.chip` component (same one used by the All / Setup required / Active rebate / Paused rebate filters), so the visual language is unified. Scoped overrides: (1) drop the `margin-left:auto` from `.chips-group` — that rule right-aligns the group inside the main toolbar's row layout, but inside the panel's column layout it would push the chips to the right edge; (2) tighten the gap to 6px and add bottom spacing to match the form rhythm; (3) make each chip `flex:1 1 0` so the 7 chips evenly fill the full width of the panel's content area instead of hugging their text on the left — this matches the design intent of an equal-width day picker. `min-width:0` allows the chips to shrink past their content width when the panel is narrow, and `justify-content:center` keeps the day labels visually centered inside their expanded boxes. */
+.rebate-days{margin-left:0;gap:6px;margin-bottom:16px}
+.rebate-days .chip{flex:1 1 0;min-width:0;justify-content:center}
 .info-text{font-size:13px;color:#6f6f6f;line-height:1.5;margin-bottom:20px}
 
 /* Toast */
@@ -647,6 +686,33 @@ body.dp-open .tbl tbody tr.pinned-divider td{background:transparent}
       <div class="empty-actions" id="e-btns"></div>
     </div>
     </div>
+    <aside class="rebate-panel" id="rebate-panel-main" role="dialog" aria-modal="false" aria-labelledby="rebate-panel-title" aria-hidden="true">
+      <div class="rebate-panel-inner">
+        <div class="filter-panel-header">
+          <span class="filter-panel-title" id="rebate-panel-title">Set Rebate Sharing for Alfonso Siphron</span>
+          <button type="button" class="filter-panel-close" aria-label="Close rebate panel" onclick="closeRebatePanel()">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 4l10 10M14 4L4 14"/></svg>
+          </button>
+        </div>
+        <div class="filter-panel-scroll">
+          <div class="field-row">
+            <div class="field" style="position:relative"><label>Rebate percentage</label><input type="text" inputmode="decimal" value="30.0" data-suffix="%" aria-label="Rebate percentage" oninput="maskPercent(this)" onfocus="this.select()"><span class="input-suffix">%</span></div>
+            <div class="field"><label>Rebate type</label><div class="select-wrap"><button type="button" class="select-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="select-rebate-type" onclick="toggleExportMenu('select-rebate-type', this); event.stopPropagation()"><span class="select-value">Auto Weekly</span></button><div class="dropdown-menu" id="select-rebate-type" role="menu" hidden><button class="dropdown-item selected" role="menuitem" onclick="pickSelectOption(this)">Auto Weekly</button><button class="dropdown-item" role="menuitem" onclick="pickSelectOption(this)">Auto Daily</button><button class="dropdown-item" role="menuitem" onclick="pickSelectOption(this)">Auto Monthly</button><button class="dropdown-item" role="menuitem" onclick="pickSelectOption(this)">Manual</button></div></div></div>
+          </div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:16px">Automatic rebate settings</div>
+          <div class="field-row">
+            <div class="field"><label>Time of payment</label><div class="time-input"><input value="09:00" aria-label="Time"><div class="chips-group time-period" role="radiogroup" aria-label="Time period"><div class="chip active" role="radio" tabindex="0" aria-checked="true" onclick="pickTimePeriod(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pickTimePeriod(this);}">PM</div><div class="chip" role="radio" tabindex="0" aria-checked="false" onclick="pickTimePeriod(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pickTimePeriod(this);}">AM</div></div></div></div>
+            <div class="field"><label>Time zone</label><div class="select-wrap combobox-wrap"><input type="text" class="combobox-trigger" value="(GMT+07:00) Western Indonesia Time — Jakarta" data-last-value="(GMT+07:00) Western Indonesia Time — Jakarta" aria-haspopup="menu" aria-expanded="false" aria-controls="select-time-zone" aria-label="Time zone" autocomplete="off" onclick="openCombobox(this);event.stopPropagation()" oninput="filterCombobox(this)" onfocus="openCombobox(this)" onblur="comboboxBlur(this)" onkeydown="comboboxKeydown(event,this)"><div class="dropdown-menu" id="select-time-zone" role="listbox" hidden><button class="dropdown-item" role="option" data-label="(GMT-12:00) International Date Line West — Baker Island" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT-12:00) International Date Line West — Baker Island</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT-11:00) Coordinated Universal Time-11 — Pago Pago" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT-11:00) Coordinated Universal Time-11 — Pago Pago</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT-10:00) Hawaii Standard Time — Honolulu" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT-10:00) Hawaii Standard Time — Honolulu</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT-09:00) Alaska Standard Time — Anchorage" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT-09:00) Alaska Standard Time — Anchorage</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT-08:00) Pacific Standard Time — Los Angeles" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT-08:00) Pacific Standard Time — Los Angeles</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT-07:00) Mountain Standard Time — Denver" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT-07:00) Mountain Standard Time — Denver</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT-06:00) Central Standard Time — Chicago" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT-06:00) Central Standard Time — Chicago</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT-05:00) Eastern Standard Time — New York" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT-05:00) Eastern Standard Time — New York</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT-04:00) Atlantic Standard Time — Halifax" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT-04:00) Atlantic Standard Time — Halifax</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT-03:00) Argentina Time — Buenos Aires" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT-03:00) Argentina Time — Buenos Aires</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+00:00) Coordinated Universal Time — London" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+00:00) Coordinated Universal Time — London</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+01:00) Central European Time — Berlin" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+01:00) Central European Time — Berlin</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+01:00) Central European Time — Paris" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+01:00) Central European Time — Paris</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+02:00) Eastern European Time — Athens" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+02:00) Eastern European Time — Athens</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+03:00) Moscow Standard Time — Moscow" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+03:00) Moscow Standard Time — Moscow</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+04:00) Gulf Standard Time — Dubai" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+04:00) Gulf Standard Time — Dubai</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+05:00) Pakistan Standard Time — Karachi" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+05:00) Pakistan Standard Time — Karachi</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+05:30) Indian Standard Time — Mumbai" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+05:30) Indian Standard Time — Mumbai</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+06:00) Bangladesh Standard Time — Dhaka" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+06:00) Bangladesh Standard Time — Dhaka</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item selected" role="option" data-label="(GMT+07:00) Western Indonesia Time — Jakarta" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+07:00) Western Indonesia Time — Jakarta</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+07:00) Western Indonesia Time — Pontianak" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+07:00) Western Indonesia Time — Pontianak</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+07:00) Indochina Time — Bangkok" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+07:00) Indochina Time — Bangkok</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+08:00) Australian Western Standard Time — Perth" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+08:00) Australian Western Standard Time — Perth</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+08:00) China Standard Time — Beijing" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+08:00) China Standard Time — Beijing</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+08:00) Singapore Time — Singapore" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+08:00) Singapore Time — Singapore</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+09:00) Japan Standard Time — Tokyo" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+09:00) Japan Standard Time — Tokyo</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+09:00) Korea Standard Time — Seoul" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+09:00) Korea Standard Time — Seoul</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+10:00) Australian Eastern Standard Time — Sydney" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+10:00) Australian Eastern Standard Time — Sydney</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="dropdown-item" role="option" data-label="(GMT+12:00) New Zealand Standard Time — Auckland" onmousedown="event.preventDefault()" onclick="pickComboboxOption(this)"><span>(GMT+12:00) New Zealand Standard Time — Auckland</span><svg class="check-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div></div>
+          </div>
+          <label style="display:block;font-size:12px;color:#6f6f6f;margin-bottom:8px">Payment day of the week</label>
+          <div class="chips-group rebate-days" role="radiogroup" aria-label="Payment day of the week"><div class="chip active" role="radio" tabindex="0" aria-checked="true" onclick="pickRebateDay(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pickRebateDay(this);}">Mon</div><div class="chip" role="radio" tabindex="0" aria-checked="false" onclick="pickRebateDay(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pickRebateDay(this);}">Tue</div><div class="chip" role="radio" tabindex="0" aria-checked="false" onclick="pickRebateDay(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pickRebateDay(this);}">Wed</div><div class="chip" role="radio" tabindex="0" aria-checked="false" onclick="pickRebateDay(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pickRebateDay(this);}">Thu</div><div class="chip" role="radio" tabindex="0" aria-checked="false" onclick="pickRebateDay(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pickRebateDay(this);}">Fri</div><div class="chip" role="radio" tabindex="0" aria-checked="false" onclick="pickRebateDay(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pickRebateDay(this);}">Sat</div><div class="chip" role="radio" tabindex="0" aria-checked="false" onclick="pickRebateDay(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pickRebateDay(this);}">Sun</div></div>
+          <p class="info-text">Next automatic payout is on 09.03.2026, at 9:00 PM (GMT+07:00). You can change the rebate percentage, payout schedule, or pause the rebate later.</p>
+        </div>
+        <div class="filter-panel-footer" style="justify-content:stretch">
+          <button class="btn-block" style="margin:0" onclick="confirmRebate()">Confirm settings</button>
+        </div>
+      </div>
+    </aside>
     </div>
   </div></div>
 
@@ -789,24 +855,7 @@ body.dp-open .tbl tbody tr.pinned-divider td{background:transparent}
 </div>
 
 <!-- ==================== SET REBATE DIALOG ==================== -->
-<div class="overlay" id="dlg-rebate">
-  <div class="modal rebate-modal">
-    <div class="modal-header"><span class="modal-title">Set Rebate Sharing for Alfonso Siphron</span><button class="modal-x" onclick="closeModal('dlg-rebate')">✕</button></div>
-    <div class="field-row">
-      <div class="field" style="position:relative"><label>Rebate percentage</label><input value="30.0"><span style="position:absolute;right:14px;bottom:10px;color:#525252">%</span></div>
-      <div class="field"><label>Rebate type</label><select><option>Auto Weekly</option><option>Auto Daily</option><option>Auto Monthly</option><option>Manual</option></select></div>
-    </div>
-    <div style="font-size:14px;font-weight:600;margin-bottom:16px">Automatic rebate settings</div>
-    <div class="field-row">
-      <div class="field"><label>Time of payment</label><div class="time-row"><input value="09:00" style="width:80px"><div class="pm-toggle"><span class="on">PM</span><span>AM</span></div></div></div>
-      <div class="field"><label>Time zone</label><select><option>(GMT+07:00) Weste...</option></select></div>
-    </div>
-    <label style="display:block;font-size:12px;color:#6f6f6f;margin-bottom:8px">Payment day of the week</label>
-    <div class="day-row"><button class="day-btn on">Mon</button><button class="day-btn">Tue</button><button class="day-btn">Wed</button><button class="day-btn">Thu</button><button class="day-btn">Fri</button><button class="day-btn">Sat</button><button class="day-btn">Sun</button></div>
-    <p class="info-text">Next automatic payout is on 09.03.2026, at 9:00 PM (GMT+07:00). You can change the rebate percentage, payout schedule, or pause the rebate later.</p>
-    <button class="btn-block" onclick="confirmRebate()">Confirm settings</button>
-  </div>
-</div>
+<!-- The legacy `<div class="overlay" id="dlg-rebate">…</div>` center-modal was removed in favor of the right-hand side panel (`#rebate-panel-main`). All existing call sites that targeted `dlg-rebate` (row buttons, bottom-bar buttons, empty-state CTAs, the `#rebate` hash deep-link) still call `openModal('dlg-rebate')` / `closeModal('dlg-rebate')` — those helpers now redirect to `openRebatePanel()` / `closeRebatePanel()`, so no call site change was required. -->
 
 <!-- Toast -->
 <div class="toast toast-success" id="toast-ok">
@@ -1046,11 +1095,152 @@ function toggleExportMenu(id, btn){
   if(willOpen){m.hidden=false;btn.setAttribute('aria-expanded','true');}
 }
 function closeAllExportMenus(){
-  document.querySelectorAll('.dropdown-menu').forEach(m=>{m.hidden=true;});
-  document.querySelectorAll('.icon-btn-text-s[aria-haspopup="menu"]').forEach(b=>b.setAttribute('aria-expanded','false'));
+  /* Generic dropdown closer: hides every `.dropdown-menu` and resets `aria-expanded` on every trigger marked `aria-haspopup="menu"` (Export icon buttons, the new `.select-trigger`s in the rebate panel, and anything else added later that follows the same convention). The selector was deliberately broadened from `.icon-btn-text-s[aria-haspopup="menu"]` so a single helper handles all dropdown surfaces. For comboboxes, also (a) tears down the fixed-position pinning that openCombobox set up: removes the scroll/resize reposition listener it attached to window and clears the inline styles so the menu reverts to its baseline .select-wrap-styled position when re-opened from a different field; (b) restores the input value to the last committed selection — important because the user might have typed a partial filter ("jak") and walked away; without the rollback the field would be left in an inconsistent state that doesn't correspond to any real option. pickComboboxOption keeps value and data-last-value in sync after a real pick, so the restore is a no-op in the happy path. */
+  document.querySelectorAll('.dropdown-menu').forEach(m=>{
+    m.hidden=true;
+    if(m._repositionHandler){
+      window.removeEventListener('scroll',m._repositionHandler,true);
+      window.removeEventListener('resize',m._repositionHandler);
+      m._repositionHandler=null;
+    }
+    if(m.style.position==='fixed'){
+      m.style.position='';m.style.top='';m.style.left='';m.style.right='';
+      m.style.width='';m.style.minWidth='';m.style.maxWidth='';m.style.maxHeight='';m.style.zIndex='';
+    }
+  });
+  document.querySelectorAll('[aria-haspopup="menu"][aria-expanded]').forEach(b=>b.setAttribute('aria-expanded','false'));
+  document.querySelectorAll('.combobox-trigger').forEach(input=>{
+    const last=input.dataset.lastValue;
+    if(last!==undefined&&input.value!==last)input.value=last;
+  });
 }
 function exportData(format,kind){closeAllExportMenus();console.log('export',format,kind);}
-document.addEventListener('click',e=>{if(!e.target.closest('.export-wrap'))closeAllExportMenus();});
+function pickSelectOption(item){
+  /* Clicked-item handler for custom selects. Finds the trigger button via the shared `.select-wrap` wrapper, copies the chosen item's text into the trigger's `.select-value` span, marks the item as `.selected` (and clears `.selected` from its siblings so the highlight only follows the actual choice), then closes the dropdown using the same helper Export uses. */
+  const wrap=item.closest('.select-wrap');
+  if(!wrap)return;
+  const trigger=wrap.querySelector('.select-trigger');
+  const valEl=trigger&&trigger.querySelector('.select-value');
+  const txt=(item.dataset.label||item.textContent||'').trim();
+  if(valEl)valEl.textContent=txt;
+  wrap.querySelectorAll('.dropdown-item').forEach(it=>it.classList.toggle('selected',it===item));
+  closeAllExportMenus();
+}
+function _comboboxReposition(input,menu){
+  /* Pin the floating combobox menu to the viewport-relative position of the input. Using position:fixed (instead of position:absolute relative to .combobox-wrap) escapes the rebate panel's `.filter-panel-scroll` overflow:auto clipping and any sibling stacking contexts — without this, the menu can't render past the scroll viewport and would get cut off near the "Confirm settings" footer. Coordinates are recomputed on every scroll/resize so the menu tracks the input if the rebate panel itself is scrolled while the menu is open. The width is fixed at max(input-width, 400px) — wider than the input so long timezone labels fit on a single line. Horizontal placement is left-aligned by default; if that would overflow the viewport's right edge (typical for the Time zone field which sits near the right side of the screen), we flip to right-aligning the menu's right edge with the input's right edge, mirroring the native macOS / Material select behavior. Final clamp keeps the menu at least 16px from the viewport's left edge for very narrow windows. Vertical height is clipped to the bounding modal/panel — for the timezone combobox the parent is the .rebate-panel, and we don't want the dropdown to spill below it into the grey workspace; the CSS-declared 280px cap stays in effect when there's plenty of vertical room. A 120px floor ensures the menu is always tall enough to show ~3 options + the search input even on short panels. */
+  const r=input.getBoundingClientRect();
+  const vw=window.innerWidth;
+  const w=Math.max(r.width,400);
+  let left=r.left;
+  if(left+w>vw-16)left=r.right-w;
+  if(left<16)left=16;
+  menu.style.position='fixed';
+  menu.style.top=(r.bottom+4)+'px';
+  menu.style.left=left+'px';
+  menu.style.right='auto';
+  menu.style.width=w+'px';
+  menu.style.maxWidth=(vw-32)+'px';
+  menu.style.zIndex='1000';
+  const container=input.closest('.rebate-panel,.filter-panel,.modal')||document.body;
+  const cr=container.getBoundingClientRect();
+  const menuTop=r.bottom+4;
+  const available=Math.max(120,cr.bottom-menuTop-8);
+  menu.style.maxHeight=Math.min(280,available)+'px';
+}
+function openCombobox(input){
+  /* Combobox opener — used by both onclick and onfocus so tabbing into the field also pops the list. If the menu is already open we don't re-init: the user might be mid-typing and resetting the filter would feel like the page eating their input. We snapshot the current value into data-last-value so closeAllExportMenus can restore it if the user dismisses without picking anything. The menu is repositioned into fixed coords (see _comboboxReposition) and the centered-on-selected behavior uses manual menu.scrollTop instead of Element.scrollIntoView — scrollIntoView with {block:'nearest'} propagates up the ancestor scroll chain and was actually scrolling the entire rebate panel down by ~150px because the selected option sits near the bottom of the dropdown's natural position, which made the user's typed-in rows ("Rebate percentage" etc.) disappear above the scroll cutoff. */
+  const wrap=input.closest('.combobox-wrap');
+  if(!wrap)return;
+  const menu=wrap.querySelector('.dropdown-menu');
+  if(!menu||!menu.hidden)return;
+  document.querySelectorAll('.dropdown-menu').forEach(m=>{if(m!==menu)m.hidden=true;});
+  document.querySelectorAll('[aria-haspopup="menu"][aria-expanded="true"]').forEach(b=>{if(b!==input)b.setAttribute('aria-expanded','false');});
+  menu.hidden=false;
+  input.setAttribute('aria-expanded','true');
+  input.dataset.lastValue=input.value;
+  filterComboboxItems(menu,'');
+  _comboboxReposition(input,menu);
+  const handler=()=>{if(!menu.hidden)_comboboxReposition(input,menu);};
+  menu._repositionHandler=handler;
+  window.addEventListener('scroll',handler,true);
+  window.addEventListener('resize',handler);
+  setTimeout(()=>{
+    try{input.select();}catch(_){}
+    const sel=menu.querySelector('.dropdown-item.selected');
+    if(sel&&sel.style.display!=='none'&&menu.scrollHeight>menu.clientHeight){
+      menu.scrollTop=Math.max(0,sel.offsetTop-(menu.clientHeight-sel.offsetHeight)/2);
+    }
+  },0);
+}
+function filterCombobox(input){
+  /* oninput handler — keeps the menu open while the user is typing and re-filters the list against the current input string. If the menu happens to be closed (e.g. the user just typed a printable key while it had been dismissed), we re-open it because the input event itself signals intent to search. */
+  const wrap=input.closest('.combobox-wrap');
+  if(!wrap)return;
+  const menu=wrap.querySelector('.dropdown-menu');
+  if(!menu)return;
+  if(menu.hidden){
+    document.querySelectorAll('.dropdown-menu').forEach(m=>{if(m!==menu)m.hidden=true;});
+    document.querySelectorAll('[aria-haspopup="menu"][aria-expanded="true"]').forEach(b=>{if(b!==input)b.setAttribute('aria-expanded','false');});
+    menu.hidden=false;
+    input.setAttribute('aria-expanded','true');
+  }
+  filterComboboxItems(menu,input.value);
+}
+function filterComboboxItems(menu,query){
+  /* Pure filter: shows .dropdown-item whose data-label (preferred for stable matching) or text content contains the query substring (case-insensitive, trimmed). When no items match we inject a single .dropdown-empty row instead of leaving an empty popup — caches the node on the menu element so we don't churn DOM on every keystroke. */
+  const q=(query||'').trim().toLowerCase();
+  let visible=0;
+  menu.querySelectorAll('.dropdown-item').forEach(item=>{
+    const label=(item.dataset.label||item.textContent||'').toLowerCase();
+    const match=q===''||label.indexOf(q)!==-1;
+    item.style.display=match?'':'none';
+    if(match)visible++;
+  });
+  let empty=menu.querySelector('.dropdown-empty');
+  if(visible===0){
+    if(!empty){empty=document.createElement('div');empty.className='dropdown-empty';empty.textContent='No matches';menu.appendChild(empty);}
+    empty.style.display='';
+  }else if(empty){empty.style.display='none';}
+}
+function pickComboboxOption(item){
+  /* Selection handler — moves the chosen label into the input, persists it as the new data-last-value so a subsequent cancel won't roll it back, then toggles the .selected marker so only one option gets the brand-blue + checkmark treatment at a time. closeAllExportMenus() handles aria-expanded reset and the global restore loop is a no-op here because we've already synced value and lastValue. */
+  const wrap=item.closest('.combobox-wrap');
+  if(!wrap)return;
+  const input=wrap.querySelector('.combobox-trigger');
+  const txt=(item.dataset.label||item.textContent||'').trim();
+  if(input){input.value=txt;input.dataset.lastValue=txt;}
+  wrap.querySelectorAll('.dropdown-item').forEach(it=>it.classList.toggle('selected',it===item));
+  closeAllExportMenus();
+}
+function comboboxKeydown(e,input){
+  if(e.key==='Escape'){
+    input.value=input.dataset.lastValue||input.value;
+    const wrap=input.closest('.combobox-wrap');
+    if(wrap){const menu=wrap.querySelector('.dropdown-menu');if(menu)filterComboboxItems(menu,'');}
+    closeAllExportMenus();
+    input.blur();
+    e.preventDefault();
+    e.stopPropagation();
+  }else if(e.key==='Enter'){
+    const wrap=input.closest('.combobox-wrap');
+    if(wrap){
+      const menu=wrap.querySelector('.dropdown-menu');
+      const first=menu&&menu.querySelector('.dropdown-item:not([style*="display: none"])');
+      if(first)pickComboboxOption(first);
+    }
+    e.preventDefault();
+  }
+}
+function comboboxBlur(input){
+  /* Defer the close — if focus is moving to a dropdown item via click, the onmousedown=preventDefault on the items keeps the input focused, so this blur fires only on true off-target dismissals (Tab, click on other UI). Delay also lets pickComboboxOption commit the new value before we run the restore check inside closeAllExportMenus. */
+  setTimeout(()=>{
+    const wrap=input.closest('.combobox-wrap');
+    if(!wrap)return;
+    const menu=wrap.querySelector('.dropdown-menu');
+    if(menu&&!menu.hidden)closeAllExportMenus();
+  },150);
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.export-wrap')&&!e.target.closest('.select-wrap'))closeAllExportMenus();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAllExportMenus();});
 /* ESC clears table selection if the user is not typing in an input/textarea and no other modal/popover handler is going to consume the event. Runs after other Escape handlers so it only fires when nothing else needs the key. */
 document.addEventListener('keydown',e=>{
@@ -1059,6 +1249,7 @@ document.addEventListener('keydown',e=>{
   if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;
   if(document.querySelector('.modal.show'))return;
   if(document.querySelector('.filter-panel.open'))return;
+  if(document.querySelector('.rebate-panel.open'))return;
   if(document.querySelector('.dropdown-menu:not([hidden])'))return;
   if(document.querySelector('.row-action-menu:not([hidden])'))return;
   if(sel.size){clrSel();}
@@ -1114,8 +1305,30 @@ function _updBBHidden(n){
   else{el.textContent='';el.hidden=true;}
 }
 function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');if(id==='s-manage')renderMP();requestAnimationFrame(_refreshTableScrollState);}
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
+function openModal(id){
+  /* The rebate dialog has been promoted from a center-overlay modal to a right-hand side panel that mirrors the filters panel. Any old call site (row buttons, bottom-bar buttons, hash deep-link) still calls openModal('dlg-rebate') — we redirect those calls to openRebatePanel() so the new surface is used everywhere without touching every caller. */
+  if(id==='dlg-rebate'){openRebatePanel();return;}
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){
+  if(id==='dlg-rebate'){closeRebatePanel();return;}
+  document.getElementById(id).classList.remove('open');
+}
+function openRebatePanel(){
+  /* Opening the rebate panel and the filters / date panels simultaneously would shrink the table-card below its min-width and force horizontal scrolling, so we close any open left-side panel first. The rebate panel itself is anchored on the right of .table-layout and animates its width / opacity / margin-left in sync with .filter-panel for a consistent feel. */
+  document.querySelectorAll('.date-panel.open').forEach(p=>toggleDatePopover(p.id.replace('date-panel-','')));
+  document.querySelectorAll('.filter-panel.open:not(.date-panel)').forEach(p=>toggleFilterPanel(p.id.replace('filter-panel-','')));
+  const panel=document.getElementById('rebate-panel-main');
+  if(!panel)return;
+  panel.classList.add('open');
+  panel.setAttribute('aria-hidden','false');
+}
+function closeRebatePanel(){
+  const panel=document.getElementById('rebate-panel-main');
+  if(!panel)return;
+  panel.classList.remove('open');
+  panel.setAttribute('aria-hidden','true');
+}
 function _closeOpenDatePanel(){
   const dp=document.querySelector('.date-panel.open');
   if(!dp)return;
@@ -1128,13 +1341,19 @@ function _closeOpenFilterPanel(){
   const k=fp.id.replace('filter-panel-','');
   toggleFilterPanel(k);
 }
+function _closeOpenRebatePanel(){
+  /* The rebate panel takes 440px on the right. Opening it together with a 320px filters panel on the left would push table-card below its min-width and force a horizontal scrollbar, so the two surfaces are mutually exclusive — opening one closes the other. */
+  const rp=document.querySelector('.rebate-panel.open');
+  if(!rp)return;
+  closeRebatePanel();
+}
 function toggleFilterPanel(kind){
   const panel=document.getElementById('filter-panel-'+kind);
   const btn=document.getElementById('filter-btn-'+kind);
   const back=document.getElementById('filter-backdrop-'+kind);
   if(!panel)return;
   const willOpen=!panel.classList.contains('open');
-  if(willOpen)_closeOpenDatePanel();
+  if(willOpen){_closeOpenDatePanel();_closeOpenRebatePanel();}
   panel.classList.toggle('open',willOpen);
   if(btn){btn.classList.toggle('active',willOpen);btn.setAttribute('aria-expanded',String(willOpen));}
   if(back)back.classList.toggle('open',willOpen);
@@ -1252,7 +1471,7 @@ function resetPanelFilters(kind){
   if(kind==='main')render();else renderMP();
   updateFilterFootprint(kind);
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){const dp=document.querySelector('.date-panel.open');if(dp){toggleDatePopover(dp.id.replace('date-panel-',''));return;}const p=document.querySelector('.filter-panel.open:not(.date-panel)');if(p){toggleFilterPanel(p.id.replace('filter-panel-',''));}}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const rp=document.querySelector('.rebate-panel.open');if(rp){closeRebatePanel();return;}const dp=document.querySelector('.date-panel.open');if(dp){toggleDatePopover(dp.id.replace('date-panel-',''));return;}const p=document.querySelector('.filter-panel.open:not(.date-panel)');if(p){toggleFilterPanel(p.id.replace('filter-panel-',''));}}});
 function confirmRebate(){closeModal('dlg-rebate');const t=document.getElementById('toast-ok');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),5000);}
 function mchip(el){el.parentElement.querySelectorAll('.m-chip').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');}
 const DATE_TODAY=(function(){const n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate());})();
@@ -1267,7 +1486,7 @@ function toggleDatePopover(id){
   const back=document.getElementById('date-backdrop-'+id);
   if(!panel)return;
   const willOpen=!panel.classList.contains('open');
-  if(willOpen)_closeOpenFilterPanel();
+  if(willOpen){_closeOpenFilterPanel();_closeOpenRebatePanel();}
   panel.classList.toggle('open',willOpen);
   if(trig)trig.setAttribute('aria-expanded',String(willOpen));
   if(back)back.classList.toggle('open',willOpen);
@@ -1397,8 +1616,47 @@ function _dpFieldError(id,kind,strict){const i=document.getElementById('date-'+k
 function _dpValidateAll(id,strict){const sErr=_dpFieldError(id,'start',strict);const eErr=_dpFieldError(id,'end',strict);let crossErr=null;if(!sErr&&!eErr){const sd=_dpParseDate(document.getElementById('date-start-'+id).value);const ed=_dpParseDate(document.getElementById('date-end-'+id).value);if(sd&&ed&&sd>ed)crossErr='Start is after end';}_dpSetFieldState(id,'start',sErr||crossErr||'');_dpSetFieldState(id,'end',eErr||'');const btn=document.getElementById('date-apply-'+id);if(btn)btn.disabled=!!(sErr||eErr||crossErr);}
 function onDateInput(el,id,kind){const cur=el.selectionStart||0;const before=el.value;const after=_dpFormatInput(before);if(before!==after){el.value=after;const diff=after.length-before.length;const pos=Math.max(0,Math.min(after.length,cur+diff));el.setSelectionRange(pos,pos);}_dpValidateAll(id,false);_dpSync(id);}
 function onDateBlur(el,id,kind){_dpValidateAll(id,true);_dpSync(id);}
-document.querySelectorAll('.day-btn').forEach(b=>b.onclick=function(){document.querySelectorAll('.day-btn').forEach(x=>x.classList.remove('on'));this.classList.add('on');});
-document.querySelectorAll('.pm-toggle span').forEach(s=>s.onclick=function(){this.parentElement.querySelectorAll('span').forEach(x=>x.classList.remove('on'));this.classList.add('on');});
+function pickRebateDay(el){
+  /* Single-select inside the rebate panel's "Payment day of the week" radiogroup. The chip component (.chip / .chip.active) is shared with the toolbar tabs, so the same visual state is reused — clicking a chip drops .active from its siblings and applies it to the clicked one, plus syncs aria-checked for screen readers. */
+  const group=el.closest('.rebate-days');
+  if(!group)return;
+  group.querySelectorAll('.chip').forEach(c=>{c.classList.remove('active');c.setAttribute('aria-checked','false');});
+  el.classList.add('active');
+  el.setAttribute('aria-checked','true');
+}
+function pickTimePeriod(el){
+  /* Single-select for the PM/AM toggle that lives inside the "Time of payment" input. Same single-select pattern as pickRebateDay — drop .active from siblings, apply it to clicked element, keep aria-checked in sync. The two helpers are intentionally kept separate (rather than one generic helper) because the radiogroup is scoped per visual container (.time-period vs .rebate-days), which keeps the JSON-like cluster of inline onclicks self-explanatory. */
+  const group=el.closest('.time-period');
+  if(!group)return;
+  group.querySelectorAll('.chip').forEach(c=>{c.classList.remove('active');c.setAttribute('aria-checked','false');});
+  el.classList.add('active');
+  el.setAttribute('aria-checked','true');
+}
+function maskPercent(el){
+  /* Percentage mask for the "Rebate percentage" field: keeps the caret stable while the user types, accepts only digits + a single decimal separator (comma is auto-normalized to dot), and clamps the value to 0-100 with at most 2 decimal places. Without this, the bare <input> would let the user type any string (e.g. "696" or "30.0abc"), and because the default value is "30.0" with the caret parked at the end after focus, every new digit would silently land after the decimal — exactly the behavior the user flagged as a bug. We rebuild a sanitized string instead of using <input type="number"> because the latter eats the suffix span, disables our select-on-focus UX, and shows browser spin buttons we don't want. */
+  const start=el.selectionStart;
+  const before=el.value;
+  let v=before.replace(/,/g,'.').replace(/[^\d.]/g,'');
+  const firstDot=v.indexOf('.');
+  if(firstDot!==-1){v=v.slice(0,firstDot+1)+v.slice(firstDot+1).replace(/\./g,'');}
+  const m=v.match(/^(\d{0,3})(?:\.(\d{0,2}))?/);
+  if(m){
+    let intPart=m[1]||'';
+    const decPart=m[2];
+    if(intPart.length>1)intPart=intPart.replace(/^0+(?=\d)/,'');
+    v=intPart+(decPart!==undefined?'.'+decPart:(v.endsWith('.')?'.':''));
+  }
+  if(v!==''&&v!=='.'){
+    const n=parseFloat(v);
+    if(!isNaN(n)&&n>100)v='100';
+  }
+  if(v!==before){
+    const diff=before.length-v.length;
+    el.value=v;
+    const pos=Math.max(0,(start||0)-diff);
+    try{el.setSelectionRange(pos,pos);}catch(_){}
+  }
+}
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 
 render();
