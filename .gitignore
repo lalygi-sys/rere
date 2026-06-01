@@ -1,0 +1,19 @@
+.DS_Store
+**/.DS_Store
+
+# Screenshot artifacts left in the workspace root
+/.btn-s.png
+/.empty-icon.png
+/.empty-state.png
+/.end.png
+/.multiselect.png
+/.search-input.png
+/.start.png
+
+# Accidental artifact directory (created by a stray editor save)
+file:/
+
+# OS / editor noise
+*.swp
+*.swo
+Thumbs.db

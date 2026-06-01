@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto Rebate — Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-page: #F8F9FB;
+  --card-bg: #FFFFFF;
+  --border: #EFEFEF;
+  --border-dark: #E0E0E0;
+  --text-primary: #1A1D1F;
+  --text-secondary: #6F767E;
+  --text-tertiary: #9A9FA5;
+  --blue: #2A85FF;
+  --blue-light: #EBF3FF;
+  --green: #83BF6E;
+  --green-light: #EAFAE4;
+  --orange: #FF6A55;
+  --orange-light: #FFF2EF;
+  --yellow: #FFBC99;
+  --yellow-light: #FFF8F0;
+  --purple: #8E59FF;
+  --purple-light: #F4EFFF;
+  --radius-card: 16px;
+  --radius-btn: 8px;
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.08);
+  --row-hover: #F5F7FA;
+  --row-selected: #EFF6FF;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page { max-width: 1280px; margin: 0 auto; padding: 32px; }
+
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.page-title { font-size: 24px; font-weight: 700; }
+
+.main-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+/* Tabs bar */
+.tabs-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+}
+.tabs-left { display: flex; gap: 0; }
+.tab-item {
+  padding: 16px 20px; font-size: 14px; font-weight: 500;
+  color: var(--text-secondary); cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all .15s;
+  user-select: none;
+}
+.tab-item:hover { color: var(--text-primary); }
+.tab-item.active { color: var(--text-primary); border-bottom-color: var(--blue); font-weight: 600; }
+.tabs-right { display: flex; gap: 10px; align-items: center; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; font-size: 13px; font-weight: 600;
+  border-radius: var(--radius-btn); cursor: pointer;
+  border: 1px solid transparent; transition: all .15s;
+  font-family: inherit; white-space: nowrap;
+}
+.btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+.btn-primary:hover { background: #1a75ef; }
+.btn-secondary { background: #fff; color: var(--text-primary); border-color: var(--border-dark); }
+.btn-secondary:hover { background: var(--bg-page); }
+.btn-danger { background: var(--orange); color: #fff; border-color: var(--orange); }
+.btn-danger:hover { background: #e55a47; }
+.btn-success { background: var(--green); color: #fff; border-color: var(--green); }
+.btn-success:hover { background: #73af5e; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-outline { background: transparent; color: var(--text-primary); border-color: var(--border-dark); }
+.btn-outline:hover { background: var(--bg-page); }
+.btn-ghost { background: transparent; border: none; color: var(--text-secondary); padding: 4px 8px; }
+.btn-ghost:hover { color: var(--text-primary); background: var(--bg-page); }
+
+/* Notification bar */
+.notif-bar {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 24px; background: var(--blue-light);
+  border-bottom: 1px solid #d4e5ff;
+  font-size: 13px; color: var(--text-primary); line-height: 1.6;
+}
+.notif-bar.hidden { display: none; }
+.notif-icon {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--blue); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+}
+.notif-content { flex: 1; }
+.notif-content strong { font-weight: 600; }
+.notif-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; margin-top: 1px; }
+.notif-close {
+  width: 24px; height: 24px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px; color: var(--text-secondary);
+  border: none; background: transparent; transition: .15s;
+}
+.notif-close:hover { background: rgba(0,0,0,0.06); color: var(--text-primary); }
+.show-stats-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; cursor: pointer; user-select: none; white-space: nowrap; }
+.show-stats-toggle input[type="checkbox"] { accent-color: var(--blue); width: 16px; height: 16px; cursor: pointer; }
+
+/* Stats container */
+.stats-container {
+  display: none; padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.stats-container.visible { display: flex; }
+.stats-row { display: flex; flex: 1; gap: 0; }
+.stat-card {
+  flex: 1; padding: 0 24px; display: flex; flex-direction: column; gap: 6px;
+  border-right: 1px solid var(--border);
+}
+.stat-card:first-child { padding-left: 0; }
+.stat-card:last-child { border-right: none; padding-right: 0; }
+.stat-header { display: flex; align-items: center; gap: 6px; }
+.stat-label { font-size: 12px; color: var(--text-tertiary); font-weight: 500; text-transform: uppercase; letter-spacing: .3px; }
+.stat-info { width: 14px; height: 14px; color: var(--text-tertiary); cursor: help; font-size: 11px; }
+.stat-body { display: flex; align-items: center; justify-content: space-between; }
+.stat-value { font-size: 20px; font-weight: 700; }
+.stat-action { font-size: 12px; font-weight: 600; color: var(--blue); cursor: pointer; border: 1px solid var(--border-dark); padding: 4px 12px; border-radius: 6px; background: #fff; transition: .15s; }
+.stat-action:hover { background: var(--blue-light); border-color: var(--blue); }
+
+/* Toolbar */
+.toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 24px; border-bottom: 1px solid var(--border);
+}
+.toolbar-left { display: flex; align-items: center; gap: 12px; }
+.search-box {
+  position: relative; width: 280px;
+}
+.search-box input {
+  width: 100%; padding: 8px 12px 8px 36px;
+  border: 1px solid var(--border-dark); border-radius: var(--radius-btn);
+  font-size: 13px; font-family: inherit; outline: none;
+  transition: border-color .15s;
+}
+.search-box input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(42,133,255,.12); }
+.search-box input::placeholder { color: var(--text-tertiary); }
+.search-icon {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  color: var(--text-tertiary); font-size: 14px; pointer-events: none;
+}
+.toolbar-right { display: flex; align-items: center; gap: 8px; }
+
+/* Filter chips */
+.chip {
+  padding: 6px 14px; font-size: 13px; font-weight: 500;
+  border-radius: 20px; cursor: pointer; border: 1px solid var(--border-dark);
+  background: #fff; color: var(--text-secondary);
+  transition: all .15s; user-select: none;
+}
+.chip:hover { background: var(--bg-page); }
+.chip.active { background: var(--text-primary); color: #fff; border-color: var(--text-primary); }
+
+/* Selection bar */
+.selection-bar {
+  display: none; align-items: center; justify-content: space-between;
+  padding: 12px 24px; background: var(--blue-light);
+  border-bottom: 1px solid #d4e5ff;
+}
+.selection-bar.visible { display: flex; }
+.selection-count { font-size: 13px; font-weight: 600; color: var(--blue); }
+.selection-actions { display: flex; gap: 8px; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 12px 16px; font-size: 12px; font-weight: 600;
+  color: var(--text-tertiary); text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-page); white-space: nowrap;
+  text-transform: uppercase; letter-spacing: .3px;
+  user-select: none;
+}
+thead th.center { text-align: center; }
+thead th .th-inner { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+thead th .sort-icon { font-size: 10px; color: var(--text-tertiary); }
+thead th .count-badge {
+  background: var(--blue); color: #fff;
+  font-size: 10px; font-weight: 700; padding: 1px 7px;
+  border-radius: 10px; margin-left: 2px;
+}
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background .1s; cursor: pointer;
+}
+tbody tr:hover { background: var(--row-hover); }
+tbody tr.selected { background: var(--row-selected); }
+tbody tr:last-child { border-bottom: none; }
+td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
+td.center { text-align: center; }
+td input[type="checkbox"] { accent-color: var(--blue); width: 16px; height: 16px; cursor: pointer; }
+th input[type="checkbox"] { accent-color: var(--blue); width: 16px; height: 16px; cursor: pointer; }
+
+.client-cell { display: flex; align-items: center; gap: 10px; }
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--blue-light); color: var(--blue);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; flex-shrink: 0;
+}
+.client-info { display: flex; flex-direction: column; }
+.client-name { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 5px; }
+.client-company { font-size: 11px; color: var(--text-tertiary); }
+.alert-icon { color: var(--orange); font-size: 13px; }
+
+.two-line { display: flex; flex-direction: column; }
+.two-line .main { font-size: 13px; font-weight: 500; }
+.two-line .sub { font-size: 11px; color: var(--text-tertiary); }
+
+/* Tags */
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 6px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.tag-active { background: var(--green-light); color: #3d8c27; }
+.tag-paused { background: var(--yellow-light); color: #b07a3b; }
+.tag-pending { background: var(--blue-light); color: var(--blue); }
+.tag-new { background: var(--purple-light); color: var(--purple); }
+.tag-unsubscribed { background: var(--orange-light); color: var(--orange); }
+
+/* Row action buttons */
+.row-actions {
+  display: inline-flex; gap: 4px; margin-left: 8px;
+  opacity: 0; transition: opacity .15s;
+}
+tbody tr:hover .row-actions { opacity: 1; }
+.row-action-btn {
+  width: 28px; height: 28px; border-radius: 6px;
+  border: 1px solid var(--border-dark); background: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 13px; color: var(--text-secondary);
+  transition: all .12s;
+}
+.row-action-btn:hover { background: var(--bg-page); color: var(--text-primary); border-color: var(--text-tertiary); }
+.status-cell { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: nowrap; }
+
+/* Pagination */
+.pagination {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px;
+}
+.pagination-info { font-size: 13px; color: var(--text-secondary); }
+.pagination-btns { display: flex; gap: 4px; }
+.page-btn {
+  width: 32px; height: 32px; border-radius: 6px;
+  border: 1px solid var(--border-dark); background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 13px; font-weight: 500;
+  color: var(--text-secondary); transition: .15s; font-family: inherit;
+}
+.page-btn:hover { background: var(--bg-page); }
+.page-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.page-btn:disabled { opacity: .4; cursor: default; }
+
+/* Modal overlay */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.45);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.visible { display: flex; }
+.modal {
+  background: #fff; border-radius: var(--radius-card);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  width: 520px; max-height: 90vh; overflow-y: auto;
+  animation: modalIn .2s ease;
+}
+.modal.wide { width: 640px; }
+@keyframes modalIn { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+}
+.modal-title { font-size: 16px; font-weight: 700; }
+.modal-close {
+  width: 28px; height: 28px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; color: var(--text-secondary);
+  border: none; background: transparent; transition: .15s;
+}
+.modal-close:hover { background: var(--bg-page); color: var(--text-primary); }
+.modal-body { padding: 24px; }
+.modal-footer {
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  padding: 16px 24px; border-top: 1px solid var(--border);
+}
+
+/* Form elements */
+.form-row { display: flex; gap: 16px; margin-bottom: 20px; }
+.form-group { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.form-input, .form-select {
+  padding: 9px 12px; border: 1px solid var(--border-dark);
+  border-radius: var(--radius-btn); font-size: 13px;
+  font-family: inherit; outline: none; transition: border-color .15s;
+  background: #fff; color: var(--text-primary);
+}
+.form-input:focus, .form-select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(42,133,255,.12); }
+.form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%236F767E' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+
+.form-section { margin-bottom: 20px; }
+.form-section:last-child { margin-bottom: 0; }
+.form-section-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.form-section-desc { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.5; }
+
+/* Chips in modal */
+.chip-group { display: flex; gap: 8px; }
+.chip-option {
+  padding: 7px 16px; font-size: 13px; font-weight: 500;
+  border-radius: var(--radius-btn); cursor: pointer;
+  border: 1px solid var(--border-dark); background: #fff;
+  color: var(--text-secondary); transition: all .15s; user-select: none;
+}
+.chip-option.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.chip-option:hover:not(.active) { background: var(--bg-page); }
+
+/* Radio options */
+.radio-group { display: flex; flex-direction: column; gap: 10px; }
+.radio-option {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; border: 1px solid var(--border-dark);
+  border-radius: var(--radius-btn); cursor: pointer; transition: .15s;
+}
+.radio-option:hover { border-color: var(--text-tertiary); }
+.radio-option.selected { border-color: var(--blue); background: var(--blue-light); }
+.radio-option input[type="radio"] { accent-color: var(--blue); margin-top: 2px; flex-shrink: 0; width: 16px; height: 16px; }
+.radio-text { display: flex; flex-direction: column; }
+.radio-text .radio-title { font-size: 13px; font-weight: 600; }
+.radio-text .radio-desc { font-size: 12px; color: var(--text-secondary); }
+
+/* Modal icon */
+.modal-icon-wrap {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; margin: 0 auto 16px;
+}
+.modal-icon-wrap.orange-bg { background: var(--orange-light); color: var(--orange); }
+.modal-icon-wrap.green-bg { background: var(--green-light); color: var(--green); }
+.modal-icon-wrap.red-bg { background: var(--orange-light); color: var(--orange); }
+.modal-center-text { text-align: center; margin-bottom: 8px; font-size: 15px; font-weight: 600; }
+.modal-center-desc { text-align: center; font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6; }
+
+.summary-card {
+  background: var(--bg-page); border-radius: var(--radius-btn);
+  padding: 14px 16px; margin-bottom: 20px;
+}
+.summary-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+.summary-row .label { color: var(--text-secondary); }
+.summary-row .value { font-weight: 600; }
+.summary-row .value.green { color: var(--green); }
+
+/* Payment table inside modal */
+.payment-table { width: 100%; border-collapse: collapse; }
+.payment-table th {
+  padding: 10px 12px; font-size: 12px; font-weight: 600;
+  color: var(--text-tertiary); text-align: left;
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase; letter-spacing: .3px;
+}
+.payment-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
+.payment-table tr:last-child td { border-bottom: none; }
+
+/* Toast */
+.toast-container { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px; background: var(--text-primary);
+  color: #fff; border-radius: var(--radius-btn);
+  font-size: 13px; font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  animation: toastIn .3s ease;
+  white-space: nowrap;
+}
+.toast .toast-icon { font-size: 16px; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.toast.hiding { animation: toastOut .3s ease forwards; }
+@keyframes toastOut { to { opacity: 0; transform: translateY(12px); } }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Auto Rebate</h1>
+  </div>
+
+  <div class="main-card">
+    <!-- Tabs bar -->
+    <div class="tabs-bar">
+      <div class="tabs-left">
+        <div class="tab-item active" data-tab="subscribed">Subscribed</div>
+        <div class="tab-item" data-tab="unsubscribed">Unsubscribed</div>
+      </div>
+      <div class="tabs-right">
+        <button class="btn btn-secondary btn-sm" onclick="openModal('managePayout')">Manage payouts</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('setup')">+ Add new client</button>
+      </div>
+    </div>
+
+    <!-- Notification bar -->
+    <div class="notif-bar" id="notifBar">
+      <div class="notif-icon">i</div>
+      <div class="notif-content">
+        Next automatic payout is on <strong>December 31, 2025</strong>, at 12:00 your time. You can change the rebate percentage, payout schedule, or pause the rebate later.
+      </div>
+      <div class="notif-actions">
+        <label class="show-stats-toggle">
+          <input type="checkbox" id="statsToggle" onchange="toggleStats()"> Show stats
+        </label>
+        <button class="notif-close" onclick="dismissNotif()">✕</button>
+      </div>
+    </div>
+
+    <!-- Stats container -->
+    <div class="stats-container" id="statsContainer">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-header"><span class="stat-label">Total clients</span><span class="stat-info" title="Total number of subscribed clients">ⓘ</span></div>
+          <div class="stat-body"><span class="stat-value" id="statClients">10</span><button class="stat-action">Show all</button></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span class="stat-label">Active volume</span><span class="stat-info" title="Total trading volume of active clients">ⓘ</span></div>
+          <div class="stat-body"><span class="stat-value">1,284.7 lots</span><button class="stat-action">View details</button></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span class="stat-label">Total rebate</span><span class="stat-info" title="Total rebate amount accrued">ⓘ</span></div>
+          <div class="stat-body"><span class="stat-value">$20,960.10</span><button class="stat-action" onclick="openModal('managePayout')">Pay all</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar" id="toolbar">
+      <div class="toolbar-left">
+        <button class="btn btn-secondary btn-sm">☰ Filters</button>
+        <div class="search-box">
+          <span class="search-icon">⌕</span>
+          <input type="text" placeholder="Search clients..." id="searchInput" oninput="applyFilters()">
+        </div>
+      </div>
+      <div class="toolbar-right" id="filterChips">
+        <span class="chip active" data-filter="all">All</span>
+        <span class="chip" data-filter="active">Active rebates</span>
+        <span class="chip" data-filter="pending">Pending setup</span>
+        <span class="chip" data-filter="paused">Paused</span>
+      </div>
+    </div>
+
+    <!-- Selection bar -->
+    <div class="selection-bar" id="selectionBar">
+      <span class="selection-count" id="selectionCount">0 clients selected</span>
+      <div class="selection-actions">
+        <button class="btn btn-outline btn-sm" onclick="bulkAction('edit')">Edit rebate</button>
+        <button class="btn btn-outline btn-sm" onclick="bulkAction('pause')">Pause</button>
+        <button class="btn btn-primary btn-sm" onclick="bulkAction('pay')">Pay rebate</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+            <th><span class="th-inner" onclick="sortTable('name')">Client<span class="sort-icon">↕</span><span class="count-badge" id="clientCount">10</span></span></th>
+            <th><span class="th-inner" onclick="sortTable('rebate')">Rebate<span class="sort-icon">↕</span></span></th>
+            <th><span class="th-inner" onclick="sortTable('frequency')">Frequency<span class="sort-icon">↕</span></span></th>
+            <th><span class="th-inner" onclick="sortTable('volume')">Volume<span class="sort-icon">↕</span></span></th>
+            <th><span class="th-inner" onclick="sortTable('payout')">Payout amount<span class="sort-icon">↕</span></span></th>
+            <th><span class="th-inner" onclick="sortTable('nextPayout')">Next payout<span class="sort-icon">↕</span></span></th>
+            <th class="center">Status</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" id="paginationBar">
+      <span class="pagination-info" id="paginationInfo">Showing 1–10 of 10 results</span>
+      <div class="pagination-btns">
+        <button class="page-btn" disabled>‹</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn" disabled>›</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal overlay -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal" id="modalContent" onclick="event.stopPropagation()"></div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const subscribedData = [
+  { id: 1, name: 'Alfonso Siphron', company: 'Tech Corp LLC', rebate: '10%', rebateType: 'Percentage', rebateVal: 10, frequency: 'Monthly', volume: '124.5 lots', volumeSub: 'this month', payout: '$1,250.00', payoutNum: 1250, nextPayout: 'Dec 31, 2025', nextPayoutSub: '12:00 UTC', status: 'Active' },
+  { id: 2, name: 'Maria Johnson', company: 'Global Trade Inc', rebate: '12%', rebateType: 'Percentage', rebateVal: 12, frequency: 'Monthly', volume: '98.2 lots', volumeSub: 'this month', payout: '$960.00', payoutNum: 960, nextPayout: 'Dec 31, 2025', nextPayoutSub: '12:00 UTC', status: 'Active' },
+  { id: 3, name: 'Corey Rosser', company: 'Rosser Finance', rebate: '8%', rebateType: 'Percentage', rebateVal: 8, frequency: 'Quarterly', volume: '67.3 lots', volumeSub: 'this quarter', payout: '$540.00', payoutNum: 540, nextPayout: 'Mar 31, 2026', nextPayoutSub: '12:00 UTC', status: 'Active' },
+  { id: 4, name: 'Terry Passaquindici', company: 'TP Holdings', rebate: '15%', rebateType: 'Percentage', rebateVal: 15, frequency: 'Monthly', volume: '210.0 lots', volumeSub: 'this month', payout: '$3,150.00', payoutNum: 3150, nextPayout: 'Dec 31, 2025', nextPayoutSub: '12:00 UTC', status: 'Active' },
+  { id: 5, name: 'id7585585', company: 'Anonymous trader', rebate: '$50', rebateType: 'Fixed', rebateVal: 50, frequency: 'Monthly', volume: '45.1 lots', volumeSub: 'this month', payout: '$50.00', payoutNum: 50, nextPayout: 'Dec 31, 2025', nextPayoutSub: '12:00 UTC', status: 'New', alert: true },
+  { id: 6, name: 'Sarah Chen', company: 'Asia Pacific Ltd', rebate: '—', rebateType: '', rebateVal: 0, frequency: '—', volume: '—', volumeSub: '—', payout: '—', payoutNum: 0, nextPayout: '—', nextPayoutSub: 'pending setup', status: 'Pending setup' },
+  { id: 7, name: 'David Kim', company: 'Kim Trading Co', rebate: '18%', rebateType: 'Percentage', rebateVal: 18, frequency: 'Monthly', volume: '—', volumeSub: 'paused', payout: '$2,187.50', payoutNum: 2187.5, nextPayout: '—', nextPayoutSub: 'paused', status: 'Paused', pausedSince: 'Nov 15, 2025' },
+  { id: 8, name: 'Elena Petrova', company: 'Eastern Markets', rebate: '10%', rebateType: 'Percentage', rebateVal: 10, frequency: 'Quarterly', volume: '156.8 lots', volumeSub: 'this quarter', payout: '$1,568.00', payoutNum: 1568, nextPayout: 'Mar 31, 2026', nextPayoutSub: '12:00 UTC', status: 'Active' },
+  { id: 9, name: 'Marcus Brown', company: 'MB Financial', rebate: '20%', rebateType: 'Percentage', rebateVal: 20, frequency: 'Monthly', volume: '300.0 lots', volumeSub: 'this month', payout: '$6,000.00', payoutNum: 6000, nextPayout: 'Dec 31, 2025', nextPayoutSub: '12:00 UTC', status: 'Active' },
+  { id: 10, name: 'Tom Garcia', company: 'Garcia Trading', rebate: '14%', rebateType: 'Percentage', rebateVal: 14, frequency: 'Monthly', volume: '78.9 lots', volumeSub: 'this month', payout: '$1,104.60', payoutNum: 1104.6, nextPayout: 'Dec 31, 2025', nextPayoutSub: '12:00 UTC', status: 'Active' }
+];
+
+const unsubscribedData = [
+  { id: 101, name: 'Lisa Park', company: 'Pacific Ventures', rebate: '10%', rebateType: 'Percentage', rebateVal: 10, frequency: 'Monthly', volume: '34.2 lots', volumeSub: '', payout: '$342.00', payoutNum: 342, nextPayout: '—', nextPayoutSub: '', status: 'Unsubscribed' },
+  { id: 102, name: 'James Wright', company: 'Wright Corp', rebate: '8%', rebateType: 'Percentage', rebateVal: 8, frequency: 'Quarterly', volume: '12.1 lots', volumeSub: '', payout: '$96.80', payoutNum: 96.8, nextPayout: '—', nextPayoutSub: '', status: 'Unsubscribed' }
+];
+
+const paymentData = [
+  { client: 'Alfonso Siphron', amount: '$1,250.00', date: 'Nov 30, 2025', status: 'Completed' },
+  { client: 'Maria Johnson', amount: '$960.00', date: 'Nov 30, 2025', status: 'Completed' },
+  { client: 'Marcus Brown', amount: '$6,000.00', date: 'Nov 30, 2025', status: 'Pending' },
+  { client: 'Terry Passaquindici', amount: '$3,150.00', date: 'Oct 31, 2025', status: 'Completed' },
+  { client: 'Tom Garcia', amount: '$1,104.60', date: 'Oct 31, 2025', status: 'Completed' }
+];
+
+let currentTab = 'subscribed';
+let currentFilter = 'all';
+let selectedIds = new Set();
+
+function getData() { return currentTab === 'subscribed' ? subscribedData : unsubscribedData; }
+
+function getFilteredData() {
+  let data = getData();
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  if (q) data = data.filter(d => d.name.toLowerCase().includes(q) || d.company.toLowerCase().includes(q));
+  if (currentFilter !== 'all') {
+    const map = { active: ['Active', 'New'], pending: ['Pending setup'], paused: ['Paused'] };
+    const allowed = map[currentFilter] || [];
+    data = data.filter(d => allowed.includes(d.status));
+  }
+  return data;
+}
+
+function statusTag(s) {
+  const m = { 'Active': 'tag-active', 'Paused': 'tag-paused', 'Pending setup': 'tag-pending', 'New': 'tag-new', 'Unsubscribed': 'tag-unsubscribed' };
+  return `<span class="tag ${m[s] || ''}">${s}</span>`;
+}
+
+function actionBtns(row) {
+  const s = row.status;
+  let btns = '';
+  if (s === 'Active') {
+    btns = `<button class="row-action-btn" title="Edit" onclick="event.stopPropagation();openEditModal(${row.id})">✎</button><button class="row-action-btn" title="Pause" onclick="event.stopPropagation();openPauseModal(${row.id})">⏸</button><button class="row-action-btn" title="Pay" onclick="event.stopPropagation();openPayModal(${row.id})">$</button>`;
+  } else if (s === 'Paused') {
+    btns = `<button class="row-action-btn" title="Resume" onclick="event.stopPropagation();openResumeModal(${row.id})">▶</button><button class="row-action-btn" title="Edit" onclick="event.stopPropagation();openEditModal(${row.id})">✎</button>`;
+  } else if (s === 'Pending setup') {
+    btns = `<button class="row-action-btn" title="Setup" onclick="event.stopPropagation();openModal('setup')">⚙</button>`;
+  } else if (s === 'New') {
+    btns = `<button class="row-action-btn" title="Edit" onclick="event.stopPropagation();openEditModal(${row.id})">✎</button><button class="row-action-btn" title="Pay" onclick="event.stopPropagation();openPayModal(${row.id})">$</button>`;
+  } else if (s === 'Unsubscribed') {
+    btns = `<button class="row-action-btn" title="Subscribe" onclick="event.stopPropagation();resubscribe(${row.id})">⟳</button>`;
+  }
+  return `<div class="row-actions">${btns}</div>`;
+}
+
+function renderTable() {
+  const data = getFilteredData();
+  const tbody = document.getElementById('tableBody');
+  const initial = n => (n.charAt(0) || '?').toUpperCase();
+
+  tbody.innerHTML = data.map(r => {
+    const sel = selectedIds.has(r.id) ? 'selected' : '';
+    const chk = selectedIds.has(r.id) ? 'checked' : '';
+    const alertHtml = r.alert ? '<span class="alert-icon">⚠</span>' : '';
+    return `<tr class="${sel}" onclick="onRowClick(${r.id})" data-id="${r.id}">
+      <td><input type="checkbox" ${chk} onclick="event.stopPropagation();toggleSelect(${r.id})" data-check="${r.id}"></td>
+      <td><div class="client-cell"><div class="avatar">${initial(r.name)}</div><div class="client-info"><span class="client-name">${r.name} ${alertHtml}</span><span class="client-company">${r.company}</span></div></div></td>
+      <td>${r.rebate}</td>
+      <td>${r.frequency}</td>
+      <td><div class="two-line"><span class="main">${r.volume}</span><span class="sub">${r.volumeSub}</span></div></td>
+      <td>${r.payout}</td>
+      <td><div class="two-line"><span class="main">${r.nextPayout}</span><span class="sub">${r.nextPayoutSub}</span></div></td>
+      <td class="center"><div class="status-cell">${statusTag(r.status)}${actionBtns(r)}</div></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('clientCount').textContent = data.length;
+  document.getElementById('paginationInfo').textContent = data.length > 0 ? `Showing 1–${data.length} of ${data.length} results` : 'No results';
+  updateSelectionBar();
+}
+
+function onRowClick(id) {
+  const row = findRow(id);
+  if (!row) return;
+  const s = row.status;
+  if (s === 'Active' || s === 'New') openEditModal(id);
+  else if (s === 'Paused') openResumeModal(id);
+  else if (s === 'Pending setup') openModal('setup');
+  else if (s === 'Unsubscribed') openModal('unsubscribe', row);
+}
+
+function findRow(id) {
+  return subscribedData.find(r => r.id === id) || unsubscribedData.find(r => r.id === id);
+}
+
+function toggleSelect(id) {
+  if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+  renderTable();
+}
+
+function toggleSelectAll() {
+  const all = document.getElementById('selectAll').checked;
+  const data = getFilteredData();
+  if (all) data.forEach(r => selectedIds.add(r.id)); else selectedIds.clear();
+  renderTable();
+}
+
+function updateSelectionBar() {
+  const bar = document.getElementById('selectionBar');
+  const count = selectedIds.size;
+  if (count > 0) {
+    bar.classList.add('visible');
+    document.getElementById('selectionCount').textContent = `${count} client${count > 1 ? 's' : ''} selected`;
+  } else {
+    bar.classList.remove('visible');
+  }
+  const allCb = document.getElementById('selectAll');
+  const data = getFilteredData();
+  if (count === 0) { allCb.checked = false; allCb.indeterminate = false; }
+  else if (count === data.length) { allCb.checked = true; allCb.indeterminate = false; }
+  else { allCb.checked = false; allCb.indeterminate = true; }
+}
+
+function applyFilters() { selectedIds.clear(); renderTable(); }
+
+/* Tabs */
+document.querySelectorAll('.tab-item').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentTab = tab.dataset.tab;
+    currentFilter = 'all';
+    selectedIds.clear();
+    document.getElementById('searchInput').value = '';
+    document.querySelectorAll('#filterChips .chip').forEach(c => c.classList.remove('active'));
+    document.querySelector('#filterChips .chip[data-filter="all"]').classList.add('active');
+    const toolbarRight = document.getElementById('filterChips');
+    toolbarRight.style.display = currentTab === 'unsubscribed' ? 'none' : 'flex';
+    renderTable();
+  });
+});
+
+/* Filter chips */
+document.querySelectorAll('#filterChips .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('#filterChips .chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    currentFilter = chip.dataset.filter;
+    selectedIds.clear();
+    renderTable();
+  });
+});
+
+/* Notification */
+function dismissNotif() { document.getElementById('notifBar').classList.add('hidden'); }
+function toggleStats() {
+  const vis = document.getElementById('statsToggle').checked;
+  document.getElementById('statsContainer').classList.toggle('visible', vis);
+}
+
+/* Modals */
+function openModal(type, ctx) {
+  const overlay = document.getElementById('modalOverlay');
+  const modal = document.getElementById('modalContent');
+  modal.className = 'modal' + (type === 'managePayout' ? ' wide' : '');
+  modal.innerHTML = modalContent(type, ctx);
+  overlay.classList.add('visible');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('visible');
+  document.body.style.overflow = '';
+}
+
+function closeModalOnOverlay(e) { if (e.target === e.currentTarget) closeModal(); }
+
+function openEditModal(id) {
+  const row = findRow(id);
+  if (!row) return;
+  openModal('edit', row);
+}
+function openPauseModal(id) {
+  const row = findRow(id);
+  if (!row) return;
+  openModal('pause', row);
+}
+function openResumeModal(id) {
+  const row = findRow(id);
+  if (!row) return;
+  openModal('resume', row);
+}
+function openPayModal(id) {
+  const row = findRow(id);
+  if (!row) return;
+  openModal('pay', row);
+}
+
+function modalContent(type, ctx) {
+  if (type === 'edit') return editModal(ctx);
+  if (type === 'pause') return pauseModal(ctx);
+  if (type === 'resume') return resumeModal(ctx);
+  if (type === 'pay') return payModal(ctx);
+  if (type === 'setup') return setupModal();
+  if (type === 'managePayout') return managePayoutModal();
+  if (type === 'unsubscribe') return unsubscribeModal(ctx);
+  return '';
+}
+
+function editModal(r) {
+  const isPercent = r.rebateType === 'Percentage';
+  return `
+  <div class="modal-header"><span class="modal-title">Edit Rebate — ${r.name}</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Rebate type</label><select class="form-select" id="editType" onchange="toggleEditType()"><option ${isPercent?'selected':''}>Percentage</option><option ${!isPercent?'selected':''}>Fixed</option></select></div>
+      <div class="form-group"><label class="form-label">Rebate value</label><input class="form-input" id="editValue" value="${r.rebateVal}" placeholder="Enter value"></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Payout schedule</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Day of payout</label><input class="form-input" value="31" placeholder="Day"></div>
+        <div class="form-group"><label class="form-label">Frequency</label><div class="chip-group"><span class="chip-option ${r.frequency==='Monthly'?'active':''}" onclick="toggleChipGroup(this)">Monthly</span><span class="chip-option ${r.frequency==='Quarterly'?'active':''}" onclick="toggleChipGroup(this)">Quarterly</span></div></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Accrued rebate after changes</div>
+      <div class="form-section-desc">Choose what happens to the accrued rebate when you change the rebate settings.</div>
+      <div class="radio-group">
+        <label class="radio-option selected" onclick="selectRadio(this)"><input type="radio" name="accrued_edit" checked><div class="radio-text"><span class="radio-title">Pay accrued rebate to client</span><span class="radio-desc">Client receives all amount on wallet</span></div></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="accrued_edit"><div class="radio-text"><span class="radio-title">Move accrued rebate to IB commission</span><span class="radio-desc">Amount is added to your IB wallet</span></div></label>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEdit(${r.id})">Save changes</button></div>`;
+}
+
+function pauseModal(r) {
+  return `
+  <div class="modal-header"><span class="modal-title">Pause Rebate</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="modal-icon-wrap orange-bg">⏸</div>
+    <div class="modal-center-text">Pause rebate for ${r.name}?</div>
+    <div class="modal-center-desc">The rebate will be paused and no payouts will be made until you resume it. Accrued rebate will be preserved.</div>
+    <div class="form-section">
+      <div class="form-section-title">Accrued rebate</div>
+      <div class="radio-group">
+        <label class="radio-option selected" onclick="selectRadio(this)"><input type="radio" name="accrued_pause" checked><div class="radio-text"><span class="radio-title">Pay accrued rebate to client</span><span class="radio-desc">Client receives all amount on wallet</span></div></label>
+        <label class="radio-option" onclick="selectRadio(this)"><input type="radio" name="accrued_pause"><div class="radio-text"><span class="radio-title">Move accrued rebate to IB commission</span><span class="radio-desc">Amount is added to your IB wallet</span></div></label>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-danger" onclick="doPause(${r.id})">Pause rebate</button></div>`;
+}
+
+function resumeModal(r) {
+  return `
+  <div class="modal-header"><span class="modal-title">Resume Rebate</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="modal-icon-wrap green-bg">▶</div>
+    <div class="modal-center-text">Resume rebate for ${r.name}?</div>
+    <div class="modal-center-desc">The rebate will be resumed with the previously configured settings. Payouts will continue on the next scheduled date.</div>
+    <div class="summary-card">
+      <div class="summary-row"><span class="label">Rebate type</span><span class="value">${r.rebate}</span></div>
+      <div class="summary-row"><span class="label">Frequency</span><span class="value">${r.frequency}</span></div>
+      <div class="summary-row"><span class="label">Paused since</span><span class="value">${r.pausedSince || 'N/A'}</span></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="doResume(${r.id})">Resume</button></div>`;
+}
+
+function payModal(r) {
+  return `
+  <div class="modal-header"><span class="modal-title">Pay Rebate</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="summary-card">
+      <div class="summary-row"><span class="label">Client</span><span class="value">${r.name}</span></div>
+      <div class="summary-row"><span class="label">Period</span><span class="value">${r.frequency === 'Monthly' ? 'December 2025' : 'Q4 2025'}</span></div>
+      <div class="summary-row"><span class="label">Calculated amount</span><span class="value green">${r.payout}</span></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Amount</label><input class="form-input" value="${r.payout}" placeholder="Amount"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Payment method</label><select class="form-select"><option>Wallet credit</option><option>Bank transfer</option></select></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="doPay(${r.id})">Confirm payment</button></div>`;
+}
+
+function setupModal() {
+  return `
+  <div class="modal-header"><span class="modal-title">Setup Auto Rebate</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Client</label><input class="form-input" placeholder="Search client..."></div>
+      <div class="form-group"><label class="form-label">Account</label><select class="form-select"><option>Select account</option><option>Standard</option><option>Premium</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Value</label><input class="form-input" placeholder="Enter value"></div>
+      <div class="form-group"><label class="form-label">Type</label><div class="chip-group"><span class="chip-option active" onclick="toggleChipGroup(this)">%</span><span class="chip-option" onclick="toggleChipGroup(this)">Fixed</span></div></div>
+      <div class="form-group"><label class="form-label">Frequency</label><select class="form-select"><option>Monthly</option><option>Quarterly</option></select></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Confirmation type</div>
+      <div class="chip-group"><span class="chip-option active" onclick="toggleChipGroup(this)">Automatic</span><span class="chip-option" onclick="toggleChipGroup(this)">Manual</span></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="doSetup()">Setup rebate</button></div>`;
+}
+
+function managePayoutModal() {
+  const rows = paymentData.map(p => {
+    const tagClass = p.status === 'Completed' ? 'tag-active' : 'tag-pending';
+    return `<tr><td>${p.client}</td><td>${p.amount}</td><td>${p.date}</td><td><span class="tag ${tagClass}">${p.status}</span></td></tr>`;
+  }).join('');
+  return `
+  <div class="modal-header"><span class="modal-title">Manage Payouts</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body" style="padding:0 24px 24px;">
+    <table class="payment-table"><thead><tr><th>Client</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
+  </div>
+  <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Close</button></div>`;
+}
+
+function unsubscribeModal(r) {
+  return `
+  <div class="modal-header"><span class="modal-title">Unsubscribe Client</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="modal-icon-wrap red-bg">⚠</div>
+    <div class="modal-center-text">Are you sure you want to unsubscribe ${r.name}?</div>
+    <div class="modal-center-desc">This action will stop the rebate for this client. They will be moved to the Unsubscribed tab and will no longer receive payouts.</div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-danger" onclick="doUnsubscribe(${r.id})">Unsubscribe</button></div>`;
+}
+
+/* Actions */
+function saveEdit(id) {
+  closeModal();
+  showToast('✓', `Rebate updated successfully`);
+}
+
+function doPause(id) {
+  const r = findRow(id);
+  if (r) { r.status = 'Paused'; r.volume = '—'; r.volumeSub = 'paused'; r.nextPayout = '—'; r.nextPayoutSub = 'paused'; r.pausedSince = 'Apr 2, 2026'; }
+  closeModal();
+  renderTable();
+  showToast('⏸', `Rebate paused for ${r ? r.name : 'client'}`);
+}
+
+function doResume(id) {
+  const r = findRow(id);
+  if (r) { r.status = 'Active'; r.volumeSub = r.frequency === 'Monthly' ? 'this month' : 'this quarter'; r.nextPayoutSub = '12:00 UTC'; r.nextPayout = r.frequency === 'Monthly' ? 'Dec 31, 2025' : 'Mar 31, 2026'; }
+  closeModal();
+  renderTable();
+  showToast('▶', `Rebate resumed for ${r ? r.name : 'client'}`);
+}
+
+function doPay(id) {
+  const r = findRow(id);
+  closeModal();
+  showToast('$', `Payment confirmed for ${r ? r.name : 'client'}`);
+}
+
+function doSetup() {
+  closeModal();
+  showToast('✓', 'Auto rebate configured successfully');
+}
+
+function doUnsubscribe(id) {
+  const idx = subscribedData.findIndex(r => r.id === id);
+  if (idx > -1) {
+    const r = subscribedData.splice(idx, 1)[0];
+    r.status = 'Unsubscribed';
+    unsubscribedData.push(r);
+  }
+  closeModal();
+  renderTable();
+  showToast('✓', 'Client unsubscribed');
+}
+
+function resubscribe(id) {
+  const idx = unsubscribedData.findIndex(r => r.id === id);
+  if (idx > -1) {
+    const r = unsubscribedData.splice(idx, 1)[0];
+    r.status = 'Active';
+    subscribedData.push(r);
+  }
+  renderTable();
+  showToast('✓', 'Client resubscribed');
+}
+
+function bulkAction(action) {
+  const count = selectedIds.size;
+  if (action === 'pause') {
+    selectedIds.forEach(id => {
+      const r = findRow(id);
+      if (r && r.status === 'Active') { r.status = 'Paused'; r.volume = '—'; r.volumeSub = 'paused'; r.nextPayout = '—'; r.nextPayoutSub = 'paused'; r.pausedSince = 'Apr 2, 2026'; }
+    });
+    showToast('⏸', `${count} client(s) paused`);
+  } else if (action === 'pay') {
+    showToast('$', `Payment initiated for ${count} client(s)`);
+  } else if (action === 'edit') {
+    showToast('✎', `Bulk edit is not available in prototype`);
+  }
+  selectedIds.clear();
+  renderTable();
+}
+
+/* Helpers */
+function toggleChipGroup(el) {
+  el.parentElement.querySelectorAll('.chip-option').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function selectRadio(el) {
+  const group = el.closest('.radio-group');
+  group.querySelectorAll('.radio-option').forEach(o => { o.classList.remove('selected'); o.querySelector('input').checked = false; });
+  el.classList.add('selected');
+  el.querySelector('input').checked = true;
+}
+
+function showToast(icon, text) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<span class="toast-icon">${icon}</span>${text}`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.classList.add('hiding'); setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+/* Sort (basic toggle, for prototype) */
+let sortCol = null, sortDir = 1;
+function sortTable(col) {
+  if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
+  const data = getData();
+  const key = { name: 'name', rebate: 'rebateVal', frequency: 'frequency', volume: 'volume', payout: 'payoutNum', nextPayout: 'nextPayout' }[col];
+  if (!key) return;
+  data.sort((a, b) => {
+    let va = a[key], vb = b[key];
+    if (typeof va === 'string') return va.localeCompare(vb) * sortDir;
+    return ((va || 0) - (vb || 0)) * sortDir;
+  });
+  renderTable();
+}
+
+/* Keyboard close */
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* Init */
+renderTable();
+</script>
+</body>
+</html>

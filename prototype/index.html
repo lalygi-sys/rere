@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rebate Sharing — Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://rsms.me/inter/inter.css" rel="stylesheet">
+<style>
+/* === Design tokens (Figma Foundations) === */
+:root{
+  --c-primary:#1945ff;
+  --c-primary-container:rgba(25,69,255,.08);
+  --c-on-primary-container:#173398;
+  --c-secondary-container:rgba(22,22,22,.08);
+  --c-content-primary:#161616;
+  --c-content-secondary:#525252;
+  --c-content-tertiary:#6f6f6f;
+  --c-surface:#ffffff;
+  --c-surface-container:#f4f5f8;
+  --c-border:#dddedf;
+  --c-border-strong:#c6c6c6;
+  --c-positive:#31865b;
+  --c-positive-bg:#e1f7e9;
+  --c-negative:#e32d2d;
+  --c-negative-bg:#feebeb;
+  --c-warning:#d18119;
+  --c-warning-bg:#fff2e5;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--c-surface);color:var(--c-content-primary);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow:hidden}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit;cursor:pointer}
+.screen{display:none;height:100vh;overflow:hidden}
+.screen.active{display:flex;flex-direction:column}
+
+/* === TOP NAV === */
+.topnav{display:flex;align-items:center;height:64px;padding:0 32px;border-bottom:1px solid var(--c-border);gap:24px;flex-shrink:0;background:var(--c-surface)}
+.logo{width:32px;height:32px;background:var(--c-primary);border-radius:8px;display:grid;place-items:center;flex-shrink:0;color:#fff;font-weight:700;font-size:15px;letter-spacing:-.5px}
+.logo svg{display:none}
+.nav-links{display:flex;gap:4px;margin-left:8px;flex:1}
+.nav-link{padding:8px 16px;border-radius:8px;font-size:14px;color:var(--c-content-primary);cursor:pointer;white-space:nowrap;font-weight:500}
+.nav-link:hover{background:var(--c-surface-container)}
+.nav-link.active{background:var(--c-secondary-container);color:var(--c-content-primary)}
+.wallet{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 16px;border:1px solid var(--c-border-strong);border-radius:8px;background:var(--c-surface);color:var(--c-content-primary);font-family:inherit;font-size:14px;line-height:20px;font-weight:600;letter-spacing:0;white-space:nowrap;cursor:pointer;margin-left:auto;transition:background .12s,border-color .12s}
+.wallet:hover{background:var(--c-surface-container);border-color:var(--c-content-secondary)}
+.wallet:active{background:var(--c-secondary-container)}
+.avatar{width:32px;height:32px;padding:0;border:none;background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border-radius:50%;transition:opacity .12s}
+.avatar:hover{opacity:.85}
+.avatar:focus-visible{outline:2px solid var(--c-content-primary);outline-offset:2px}
+.avatar svg{width:32px;height:32px;display:block}
+
+/* === CONTENT AREA === */
+.content-wrap{padding:24px 32px 24px;flex:1;background:var(--c-surface-container);display:flex;flex-direction:column;min-height:0}
+.page-heading{margin:0;padding:0;font-family:inherit;font-size:22px;line-height:28px;font-weight:600;letter-spacing:-.005em;color:var(--c-content-primary);white-space:nowrap}
+.inner{max-width:1216px;width:100%;margin:0 auto;background:var(--c-surface);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;min-height:0;flex:1 1 auto;box-sizing:border-box;padding:0 24px}
+.table-card{background:var(--c-surface);margin:0 0 24px;border:1px solid var(--c-border);border-radius:12px;flex:1 1 0;min-height:0;min-width:0;overflow-x:auto;overflow-y:auto;overscroll-behavior:contain;scroll-behavior:smooth}
+/* When the floating selection bar is visible, shrink the card so its bottom border ends right above the bar (8px breathing room). Math: bar height = 64px (16 padding + 32 button size-S + 16 padding), bar bottom = 24px from viewport → bar top = viewport-88. content-wrap padding-bottom = 24px → with margin-bottom:72px on .table-layout, card bottom = viewport-(24+72) = viewport-96. Gap between card border and bar top = 8px. Note: the selector targets .table-layout (not .table-card) because the rule `.table-layout .table-card{margin:0}` overrides any margin on the inner card. Shrinking the wrapping layout has the same visual effect since the card is flex:1 1 auto inside it. */
+.table-layout.has-bb{margin-bottom:72px}
+.table-card::-webkit-scrollbar{width:10px}
+.table-card::-webkit-scrollbar-track{background:transparent;margin:4px 0}
+.table-card::-webkit-scrollbar-thumb{background:var(--c-border);border-radius:8px;border:2px solid var(--c-surface);background-clip:padding-box}
+.table-card::-webkit-scrollbar-thumb:hover{background:var(--c-border-strong);background-clip:padding-box}
+.table-card{scrollbar-width:thin;scrollbar-color:var(--c-border) transparent}
+@media (max-width:1024px){
+  html,body{height:auto;overflow:visible}
+  body{overflow:visible}
+  .screen,.screen.active{height:auto;overflow:visible}
+  .content-wrap{display:block}
+  .inner{flex:none;height:auto;max-height:none;overflow:visible;display:block}
+  .table-card{flex:none;overflow:visible}
+  .tbl thead{position:static}
+  .page-heading{font-size:18px;line-height:24px}
+  .tabs-row{gap:20px}
+}
+
+/* === TABS ROW === */
+.tabs-row{display:flex;align-items:center;gap:32px;padding:20px 0 16px;flex-shrink:0}
+.page-heading{display:none}
+.tabs{display:inline-flex;align-items:stretch;align-self:flex-end}
+.tab-item{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:160px;padding:12px 8px;background:transparent;border:none;font-family:inherit;font-size:14px;line-height:20px;font-weight:600;letter-spacing:0;color:var(--c-content-tertiary);cursor:pointer;white-space:nowrap;transition:color .12s}
+.tab-item:hover:not(.active){color:var(--c-content-secondary)}
+.tab-item.active{color:var(--c-primary)}
+.tab-item::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--c-border)}
+.tab-item.active::after{height:2px;background:var(--c-primary);border-radius:1px 1px 0 0}
+.tab-item:focus-visible{outline:none}
+.tab-item:focus-visible::after{box-shadow:0 0 0 2px var(--c-primary);border-radius:2px}
+.tabs-right{margin-left:auto;display:flex;align-items:center;gap:4px}
+.tabs-action{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:32px;padding:0 16px;border-radius:8px;font-size:14px;line-height:20px;font-weight:600;color:var(--c-content-primary);background:transparent;cursor:pointer;white-space:nowrap;transition:background .15s}
+.tabs-action:hover{background:var(--c-secondary-container)}
+.tabs-action:active{background:var(--c-border)}
+.tabs-action svg{width:18px;height:18px;flex-shrink:0}
+.icon-btn-text-s{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:none;border-radius:8px;background:transparent;color:var(--c-content-primary);cursor:pointer;transition:background .12s}
+.icon-btn-text-s:hover{background:var(--c-secondary-container)}
+.icon-btn-text-s:active{background:rgba(22,22,22,.15)}
+.icon-btn-text-s[aria-expanded="true"]{background:var(--c-secondary-container)}
+.icon-btn-text-s svg{width:20px;height:20px;flex-shrink:0}
+.export-wrap{position:relative;display:inline-flex}
+.dropdown-menu{position:absolute;top:calc(100% + 4px);right:0;min-width:220px;background:var(--c-surface);border:1px solid var(--c-border-strong);border-radius:12px;box-shadow:0 4px 8px rgba(0,0,0,.06);padding:8px;z-index:50;display:flex;flex-direction:column;align-items:stretch}
+.dropdown-menu[hidden]{display:none}
+.dropdown-item{display:flex;align-items:center;gap:12px;min-height:48px;padding:12px 16px;border:none;border-radius:12px;background:transparent;text-align:left;font-family:inherit;font-size:14px;line-height:20px;font-weight:400;letter-spacing:0;color:var(--c-content-primary);cursor:pointer;transition:background .12s}
+.dropdown-item:hover{background:var(--c-secondary-container)}
+.dropdown-item:active{background:rgba(22,22,22,.12)}
+.search-wrap{position:relative;display:inline-flex;align-items:center}
+.search-input{display:none;align-items:center;gap:8px;height:32px;width:260px;padding:4px 12px;background:var(--c-surface);border:1px solid var(--c-border-strong);border-radius:8px;transition:border-color .15s,box-shadow .15s}
+.search-input.open{display:inline-flex}
+.search-input:hover{border-color:var(--c-content-secondary)}
+.search-input:focus-within{border-color:var(--c-primary);box-shadow:0 0 0 3px var(--c-primary-container)}
+.search-input svg{width:18px;height:18px;flex-shrink:0;color:var(--c-content-secondary)}
+.search-input input{flex:1;min-width:0;border:none;background:transparent;outline:none;font-family:inherit;font-size:14px;line-height:20px;color:var(--c-content-primary)}
+.search-input input::placeholder{color:var(--c-content-tertiary)}
+.search-clear{flex-shrink:0;width:18px;height:18px;display:inline-grid;place-items:center;border:none;background:transparent;cursor:pointer;color:var(--c-content-secondary);padding:0;border-radius:4px}
+.search-clear:hover{color:var(--c-content-primary);background:var(--c-secondary-container)}
+.search-wrap.is-open .tabs-action{display:none}
+
+/* === TOOLBAR (Filters + Date + Chips) === */
+.toolbar{display:flex;align-items:center;gap:8px;padding:24px 0 20px;flex-wrap:nowrap;flex-shrink:0}
+.filter-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:32px;padding:0 12px;border:1px solid var(--c-border);border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;background:var(--c-surface);white-space:nowrap;color:var(--c-content-primary);transition:background-color .18s,border-color .18s,color .18s}
+.filter-btn:hover{border-color:var(--c-border-strong)}
+.filter-btn svg{width:18px;height:18px}
+.filter-btn .badge{display:inline-flex;align-items:center;justify-content:center;height:18px;min-width:20px;padding:0 4px;background:var(--c-primary-container);color:var(--c-on-primary-container);border-radius:4px;font-family:'Inter Display','Inter',-apple-system,BlinkMacSystemFont,sans-serif;font-size:12px;line-height:16px;letter-spacing:.15px;font-weight:400;font-feature-settings:'lnum' 1,'tnum' 1;margin-left:2px;animation:fb-fade-in .18s ease-out}
+@keyframes fb-fade-in{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+.date-range{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border:1px solid var(--c-border);border-radius:8px;font-family:inherit;font-size:14px;color:var(--c-content-primary);background:var(--c-surface);cursor:pointer;white-space:nowrap;transition:border-color .15s;text-align:left}
+.date-range:hover{background:var(--c-surface-container)}
+.date-range[aria-expanded="true"]{background:var(--c-surface);border-color:#3b71ff;box-shadow:0 0 0 4px rgba(59,113,255,.5)}
+.date-range[aria-expanded="true"]:hover{background:var(--c-surface);border-color:#3b71ff}
+.date-range .dr-label{color:var(--c-content-secondary);font-weight:400}
+.date-range svg{width:18px;height:18px}
+.date-range-wrap{position:relative}
+.date-panel-dates{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.date-panel-dates .date-field{display:flex;flex-direction:column}
+.date-panel-dates .date-field .modal-label{font-size:12px;color:var(--c-content-secondary);font-weight:500;margin-bottom:6px}
+.date-panel-dates .m-input{padding:8px 12px;font-size:14px;border-width:1px}
+.date-panel-dates .m-input.invalid{border-color:var(--c-negative);background:var(--c-negative-bg)}
+.date-panel-dates .m-input.invalid:focus{border-color:var(--c-negative)}
+.date-panel-dates .field-error{font-size:12px;line-height:16px;color:var(--c-negative);margin-top:4px;min-height:16px;visibility:hidden}
+.date-panel-dates .date-field.has-error .field-error{visibility:visible}
+.cal{user-select:none}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-title{font-size:14px;line-height:20px;font-weight:600;color:var(--c-content-primary);font-feature-settings:'lnum' 1,'tnum' 1}
+.cal-nav-btn{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;border-radius:8px;cursor:pointer;color:var(--c-content-primary);transition:background .12s}
+.cal-nav-btn:hover{background:var(--c-surface-container)}
+.cal-nav-btn:disabled{opacity:.35;cursor:not-allowed;background:transparent}
+.cal-nav-btn svg{width:16px;height:16px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-wd{height:28px;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:16px;letter-spacing:.15px;color:var(--c-content-secondary);font-weight:500;font-feature-settings:'lnum' 1,'tnum' 1}
+.cal-cell{position:relative;height:36px;display:flex;align-items:center;justify-content:center}
+.cal-cell.in-range::before,.cal-cell.is-start::before,.cal-cell.is-end::before{content:"";position:absolute;top:2px;bottom:2px;left:0;right:0;background:rgba(25,69,255,.08);pointer-events:none}
+.cal-cell.is-start::before{left:50%}
+.cal-cell.is-end::before{right:50%}
+.cal-cell.is-start.is-end::before{display:none}
+.cal-day{position:relative;z-index:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:none;background:transparent;font-family:inherit;font-size:13px;line-height:20px;color:var(--c-content-primary);cursor:pointer;font-feature-settings:'lnum' 1,'tnum' 1;transition:background .1s}
+.cal-day:hover{background:var(--c-secondary-container)}
+.cal-day.out{color:var(--c-content-tertiary)}
+.cal-day.today{box-shadow:inset 0 0 0 1px var(--c-border-strong)}
+.cal-day.is-start,.cal-day.is-end{background:var(--c-primary);color:#fff;font-weight:600}
+.cal-day.is-start:hover,.cal-day.is-end:hover{background:#1538d0}
+.cal-day:disabled{color:var(--c-content-tertiary);cursor:not-allowed;background:transparent}
+.date-panel .filter-panel-footer{justify-content:space-between;gap:12px}
+.date-panel .filter-panel-footer .fp-count{font-size:14px;line-height:20px;color:var(--c-content-secondary);font-feature-settings:'lnum' 1,'tnum' 1}
+.chips-group{display:flex;gap:8px;margin-left:auto}
+.chip{display:inline-flex;align-items:center;gap:0;height:32px;padding:0 8px;border:1px solid var(--c-border);border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;background:var(--c-surface);white-space:nowrap;color:var(--c-content-primary);line-height:20px;transition:border-color .15s,background .15s,color .15s}
+.chip:hover{background:var(--c-surface-container)}
+.chip:active{background:var(--c-secondary-container)}
+.chip.active{background:var(--c-primary-container);border-color:transparent;color:var(--c-on-primary-container)}
+.chip.active:hover{background:rgba(25,69,255,.12)}
+.chip.active:active{background:rgba(25,69,255,.16)}
+.chip .chip-label{display:inline-flex;align-items:center;padding:0 8px}
+.chip .cnt{display:inline-flex;align-items:center;justify-content:center;height:18px;min-width:20px;padding:0 4px;background:var(--c-secondary-container);color:var(--c-content-primary);border-radius:4px;font-family:'Inter Display','Inter',-apple-system,BlinkMacSystemFont,sans-serif;font-size:12px;line-height:16px;letter-spacing:.15px;font-weight:400;font-feature-settings:'lnum' 1,'tnum' 1}
+.chip.active .cnt{background:rgba(25,69,255,.16);color:var(--c-on-primary-container)}
+
+/* === TABLE === */
+.tbl{width:100%;border-collapse:collapse;table-layout:auto;min-width:960px}
+.tbl thead{position:sticky;top:0;z-index:2;background:var(--c-surface)}
+.tbl th{text-align:left;padding:14px 12px;font-size:12px;font-weight:400;line-height:16px;letter-spacing:.15px;color:var(--c-content-secondary);white-space:nowrap;vertical-align:top;background:var(--c-surface);box-shadow:inset 0 -1px 0 var(--c-border)}
+.tbl th .th-label{display:inline-flex;align-items:center;gap:6px;line-height:16px}
+.tbl th .sub{display:block;font-size:10px;line-height:12px;letter-spacing:.15px;color:var(--c-content-tertiary);font-weight:400;margin-top:4px}
+.th-info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;padding:0;border:none;background:transparent;color:var(--c-content-tertiary);cursor:help;vertical-align:-1px;border-radius:50%;transition:color .12s;margin-left:2px}
+.th-info:hover{color:var(--c-content-primary)}
+.th-info svg{width:12px;height:12px;display:block}
+.tooltip{position:fixed;top:0;left:0;background:#161616;color:#fff;padding:10px 12px;border-radius:8px;font-family:inherit;font-size:12px;line-height:16px;font-weight:400;letter-spacing:0;box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:1000;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s;max-width:280px}
+.tooltip[data-visible="true"]{opacity:1;visibility:visible}
+.tooltip .tip-row{display:flex;justify-content:space-between;align-items:center;gap:24px;line-height:16px}
+.tooltip .tip-row + .tip-row{margin-top:4px}
+.tooltip .tip-key{color:rgba(255,255,255,.65)}
+.tooltip .tip-val{color:#fff;font-weight:600;font-variant-numeric:tabular-nums}
+.tooltip .tip-delta.up{color:#7cd198}
+.tooltip .tip-delta.down{color:#f49d9d}
+.tooltip .tip-caption{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.7);font-size:11px;line-height:14px}
+.tooltip .tip-text{font-size:12px;line-height:16px}
+.tbl td{padding:16px 12px;font-size:14px;line-height:20px;border-bottom:1px solid var(--c-border);vertical-align:middle}
+.tbl tbody tr:last-child td{border-bottom:none}
+.tbl tbody tr{cursor:pointer;transition:background .12s}
+.tbl tbody tr:hover{background:var(--c-surface-container)}
+body.dp-open #tbl-main thead th:nth-child(3),
+body.dp-open #tbl-main thead th:nth-child(4){background:var(--c-surface-container);transition:background .2s}
+body.dp-open #tbl-main tbody td:nth-child(3),
+body.dp-open #tbl-main tbody td:nth-child(4){background-color:var(--c-surface-container);transition:background-color .2s}
+body.dp-open #tbl-main tbody tr:hover td:nth-child(3),
+body.dp-open #tbl-main tbody tr:hover td:nth-child(4){background-color:rgba(22,22,22,.08)}
+/* Selected row uses an opaque blue (rgba(25,69,255,.16) flattened over white = #dae1ff). Stronger than primary-container .08 so the selected state is clearly distinguishable from the .surface-container hover gray. Opaque so the sticky last cell — which uses the same color — visually matches the rest of the row, instead of looking like a different shade due to transparency mixing. */
+.tbl tbody tr.selected{background:#dae1ff}
+.tbl .col-cb{width:4%}
+.tbl .col-client{width:20%}
+.tbl .col-profit{width:12%}
+.tbl .col-lots{width:12%}
+.tbl .col-activity{width:12%}
+.tbl .col-trend{width:12%}
+.tbl .col-settings{width:16%}
+.tbl .col-status{width:24%}
+.client-name{font-size:14px;line-height:20px;color:var(--c-content-primary);display:inline-flex;align-items:center;gap:6px}
+.client-sub{font-size:10px;line-height:12px;letter-spacing:.15px;color:var(--c-content-tertiary);margin-top:4px}
+.td-sub{font-size:10px;line-height:12px;letter-spacing:.15px;color:var(--c-content-tertiary);margin-top:4px}
+.td-trend{margin-top:4px;font-size:10px;line-height:12px;letter-spacing:.15px}
+.td-trend .trend{font-size:10px}
+.trend{display:inline-flex;align-items:center;gap:2px;font-weight:600;font-size:10px;letter-spacing:.15px;cursor:help;padding:0 4px;margin-left:-4px;border-radius:4px;transition:background .12s;line-height:12px;border-bottom:1px dotted currentColor}
+.trend .trend-arrow{font-size:10px;line-height:1;font-weight:600;display:inline-block}
+@media (hover:none){
+  .trend{cursor:pointer;padding:2px 6px;margin-left:-6px;border-radius:6px;-webkit-tap-highlight-color:transparent}
+  .trend:active{background:var(--c-surface-container)}
+  .th-info{cursor:pointer;-webkit-tap-highlight-color:transparent}
+}
+.trend:hover{background:var(--c-surface-container)}
+.trend-up{color:var(--c-positive)}
+.trend-down{color:var(--c-negative)}
+.trend-flat{color:var(--c-content-tertiary)}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;font-size:12px;line-height:16px;font-weight:500;letter-spacing:.15px;white-space:nowrap}
+.tag-setup{color:var(--c-warning);background:var(--c-warning-bg)}
+.tag-active{color:var(--c-positive);background:var(--c-positive-bg)}
+.tag-paused{color:var(--c-content-primary);background:var(--c-border)}
+.tag-stopped{color:var(--c-content-tertiary);background:var(--c-secondary-container)}
+.tag-auto{color:var(--c-primary);background:var(--c-primary-container)}
+.tag-await{color:var(--c-warning);background:var(--c-warning-bg)}
+.tag-nothing{color:var(--c-positive);background:var(--c-positive-bg)}
+/* Checkbox — Size S (DS 2187:21423): 20x20 hit area, 16x16 visual square, radius 2.4 */
+.checkbox{position:relative;width:20px;height:20px;padding:0;border:none;background:transparent;cursor:pointer;flex-shrink:0;display:inline-block;vertical-align:middle}
+.checkbox::before{content:'';position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);border:1.5px solid var(--c-border-strong);border-radius:2.4px;background:var(--c-surface);box-sizing:border-box;transition:background .12s,border-color .12s}
+.checkbox:hover::before{border-color:var(--c-content-secondary)}
+.checkbox.checked::before,
+.checkbox.indeterminate::before{background:var(--c-content-primary);border-color:var(--c-content-primary)}
+.checkbox.checked::after{content:'';position:absolute;left:50%;top:50%;width:9px;height:5px;transform:translate(-50%,-70%) rotate(-45deg);border-left:1.5px solid #fff;border-bottom:1.5px solid #fff;border-bottom-left-radius:.5px}
+.checkbox.indeterminate::after{content:'';position:absolute;left:50%;top:50%;width:8px;height:1.5px;transform:translate(-50%,-50%);background:#fff;border-radius:.75px}
+.alert-badge{display:inline-flex;align-items:center;gap:4px;color:var(--c-negative);font-size:14px;font-weight:500;margin-left:6px}
+.alert-badge svg{width:16px;height:16px}
+.client-name .alert-badge{cursor:help;border-radius:4px;padding:1px 2px;transition:background .12s}
+.client-name .alert-badge:hover{background:rgba(227,45,45,.08)}
+
+.tbl tbody tr.row-affected td{background-color:rgba(227,45,45,.04)}
+.tbl tbody tr.row-affected:hover td{background-color:rgba(227,45,45,.08)}
+.tbl tbody tr.row-affected.selected td{background-color:#dae1ff}
+
+.tbl tbody tr.pinned-divider td{padding:6px 0 4px;background:transparent;border-bottom:1px dashed var(--c-border);cursor:default}
+.tbl tbody tr.pinned-divider:hover td{background:transparent}
+.tbl tbody tr.pinned-divider .pd-label{display:inline-flex;align-items:center;gap:6px;font-size:11px;line-height:14px;letter-spacing:.4px;text-transform:uppercase;color:var(--c-content-tertiary);font-weight:600;padding:0 16px;font-feature-settings:'lnum' 1,'tnum' 1}
+body.dp-open .tbl tbody tr.pinned-divider td{background:transparent}
+
+.th-pin-badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 6px 0 5px;margin-left:8px;border:1px solid rgba(227,45,45,.32);border-radius:6px;background:transparent;color:var(--c-negative);font-family:inherit;font-size:12px;line-height:16px;font-weight:600;letter-spacing:.15px;white-space:nowrap;cursor:pointer;vertical-align:middle;font-feature-settings:'lnum' 1,'tnum' 1;transition:background .12s,border-color .12s,color .12s;animation:tpb-fade-in .22s ease-out}
+.th-pin-badge svg{width:13px;height:13px;flex-shrink:0}
+.th-pin-badge:hover{background:rgba(227,45,45,.08);border-color:rgba(227,45,45,.5)}
+.th-pin-badge:active{background:rgba(227,45,45,.14)}
+.th-pin-badge:focus-visible{outline:2px solid var(--c-primary);outline-offset:2px}
+.th-pin-badge.active{background:var(--c-negative);border-color:var(--c-negative);color:#fff}
+.th-pin-badge.active:hover{background:#c01818;border-color:#c01818}
+.th-pin-badge .tpb-count{font-weight:600}
+.th-pin-badge[hidden]{display:none}
+@keyframes tpb-fade-in{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.sort-arrows{color:var(--c-content-tertiary);font-size:10px;margin-left:4px;display:inline-flex;align-items:center}
+.sort-arrows svg{width:16px;height:16px;display:block}
+.sort-arrows svg path{transition:opacity .12s,fill .12s}
+.tbl th.th-sortable{cursor:pointer;user-select:none;outline:none}
+.tbl th.th-sortable:hover .sort-arrows{color:var(--c-content-secondary)}
+.tbl th.th-sortable:focus-visible{box-shadow:inset 0 0 0 2px var(--c-primary)}
+.tbl th.th-sortable[data-sort="asc"] .sort-arrows{color:var(--c-content-primary)}
+.tbl th.th-sortable[data-sort="asc"] .sa-down{opacity:.3}
+.tbl th.th-sortable[data-sort="desc"] .sort-arrows{color:var(--c-content-primary)}
+.tbl th.th-sortable[data-sort="desc"] .sa-up{opacity:.3}
+
+/* Row actions on hover. width:max-content keeps the container exactly as wide as its buttons so it occupies no more space than necessary. Alignment inside the td is left by default (where the status tag normally sits); right-alignment is only applied in compressed mode — see .table-card.is-scrolled-x .row-actions below. */
+.row-actions{display:none;align-items:center;gap:12px;position:relative;width:max-content}
+.row-actions .btn-sm{min-width:128px}
+.row-actions .row-action-icons{display:inline-flex;align-items:center;gap:4px}
+.row-actions .row-action-more{display:none}
+.tbl tbody tr:hover .row-actions,
+.tbl tbody tr.menu-open .row-actions{display:flex}
+.tbl tbody tr:hover .status-default,
+.tbl tbody tr.menu-open .status-default{display:none}
+
+/* Compressed mode: only the secondary icon cluster (info + statistics) collapses into a single kebab (...). Primary button stays visible. */
+/* In compressed mode the last td is pinned to 196px (≈ row-actions width + side padding), so we right-align the row-actions inside it for symmetry with the right edge of the table. In full-width mode the td is wider than the buttons, and right-aligning would dump them in the far-right corner — there we let them sit at the natural start of the td so they line up where the status tag normally renders. */
+.table-card.is-scrolled-x .row-actions{margin-left:auto}
+.table-card.is-scrolled-x .row-actions .row-action-icons{display:none}
+.table-card.is-scrolled-x .tbl tbody tr:hover .row-actions .row-action-more,
+.table-card.is-scrolled-x .tbl tbody tr.menu-open .row-actions .row-action-more{display:inline-flex}
+/* Compressed mode: switch table to fixed layout. Pin every column except client to absolute pixel widths so the status column stays exactly 196px (row-actions 172 + cell padding 24). The client column has no width set, so all extra horizontal space goes there instead of being distributed to the status column. */
+.table-card.is-scrolled-x .tbl{table-layout:fixed;min-width:960px}
+.table-card.is-scrolled-x .tbl .col-cb{width:48px}
+.table-card.is-scrolled-x .tbl .col-client{width:auto}
+.table-card.is-scrolled-x .tbl .col-profit{width:120px}
+.table-card.is-scrolled-x .tbl .col-lots{width:120px}
+.table-card.is-scrolled-x .tbl .col-activity{width:120px}
+.table-card.is-scrolled-x .tbl .col-trend{width:120px}
+.table-card.is-scrolled-x .tbl .col-settings{width:160px}
+.table-card.is-scrolled-x .tbl .col-status{width:196px}
+.table-card.is-scrolled-x .tbl th:last-child,
+.table-card.is-scrolled-x .tbl td:last-child{width:196px}
+
+/* Row action dropdown menu (shown when kebab is clicked). JS portals the element to <body> and positions it with position:fixed so it stacks above sticky cells. */
+.row-action-menu{position:fixed;display:flex;flex-direction:column;background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.14),0 2px 4px rgba(0,0,0,.06);padding:4px;min-width:200px;z-index:1000}
+.row-action-menu[hidden]{display:none}
+.ram-item{display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;border:none;background:transparent;border-radius:6px;font-family:inherit;font-size:14px;line-height:20px;color:var(--c-content-primary);cursor:pointer;white-space:nowrap;text-align:left}
+.ram-item:hover{background:var(--c-surface-container)}
+.ram-item:active{background:var(--c-border)}
+.ram-icon{display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;color:var(--c-content-secondary);flex-shrink:0}
+.ram-icon svg{width:18px;height:18px}
+
+/* Sticky last column: status + row-actions stays visible on right edge during horizontal scroll */
+.tbl th:last-child,
+.tbl td:last-child{position:sticky;right:0;background:var(--c-surface);z-index:1}
+.tbl thead th:last-child{z-index:3}
+.tbl tbody tr:hover td:last-child{background:var(--c-surface-container)}
+.tbl tbody tr.row-affected td:last-child{background:#fdf6f6}
+.tbl tbody tr.row-affected:hover td:last-child{background:#f9e6e6}
+/* Selected row: sticky cell uses the same opaque blue as the rest of the row (#dae1ff = rgba(25,69,255,.16) flattened on white) so the row reads as a single contiguous selection and scrolled cells underneath don't bleed through. */
+.tbl tbody tr.selected td:last-child{background:#dae1ff}
+/* Left-edge shadow appears only when horizontal scroll is active (.table-card scroll-narrowed) */
+.table-card.is-scrolled-x .tbl tbody td:last-child{box-shadow:-6px 0 10px -6px rgba(0,0,0,.08)}
+.table-card.is-scrolled-x .tbl thead th:last-child{box-shadow:inset 0 -1px 0 var(--c-border),-6px 0 10px -6px rgba(0,0,0,.08)}
+.btn-sm{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 16px;border:none;border-radius:8px;font-family:inherit;font-size:14px;line-height:20px;font-weight:600;letter-spacing:0;color:var(--c-content-primary);background:transparent;cursor:pointer;white-space:nowrap;transition:background .12s}
+.btn-sm-primary{background:var(--c-primary);color:#fff}
+.btn-sm-primary:hover{background:#1538d0}
+.btn-sm-primary:active{background:#0f2da8}
+.btn-sm-secondary{background:var(--c-surface);color:var(--c-content-primary);border:1px solid var(--c-border-strong)}
+.btn-sm-secondary:hover{background:var(--c-surface-container)}
+.btn-sm-secondary:active{background:var(--c-border)}
+.icon-btn-sm{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:1px solid var(--c-border-strong);border-radius:8px;background:var(--c-surface);color:var(--c-content-primary);cursor:pointer;transition:background .12s,border-color .12s}
+.icon-btn-sm:hover{background:var(--c-secondary-container)}
+.icon-btn-sm svg{width:24px;height:24px;display:block;color:inherit}
+
+/* === MODAL === */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:100;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;padding:28px 28px 24px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.18)}
+.modal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.modal-title{font-size:18px;font-weight:600;line-height:1.3;padding-right:16px}
+.modal-x{background:none;border:none;font-size:22px;color:#525252;line-height:1;padding:0}
+.modal-x:hover{color:#161616}
+.modal-section{margin-bottom:20px}
+.modal-label{font-size:13px;color:#6f6f6f;margin-bottom:8px}
+.m-chips{display:flex;flex-wrap:wrap;gap:8px}
+.m-chip{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 16px;border:1px solid var(--c-border);border-radius:8px;font-family:inherit;font-size:14px;line-height:20px;font-weight:600;letter-spacing:0;color:var(--c-content-primary);background:var(--c-surface);cursor:pointer;white-space:nowrap;user-select:none;transition:background .12s,border-color .12s,color .12s}
+.m-chip:hover{background:var(--c-surface-container)}
+.m-chip:active{background:var(--c-secondary-container)}
+.m-chip:focus-visible{outline:2px solid var(--c-primary);outline-offset:2px}
+.m-chip.sel{background:var(--c-primary-container);border-color:transparent;color:var(--c-on-primary-container)}
+.m-chip.sel:hover{border-color:transparent;background:rgba(25,69,255,.12)}
+.m-chip.sel:active{border-color:transparent;background:rgba(25,69,255,.16)}
+.m-chip.xs{height:24px;padding:0 12px;font-size:12px;line-height:16px;letter-spacing:.15px;font-feature-settings:'lnum' 1,'tnum' 1}
+.m-input{width:100%;padding:10px 14px;border:1.5px solid #d9d9d9;border-radius:8px;font-size:14px;font-family:inherit;outline:none;color:#161616}
+.m-input:focus{border-color:#1945ff}
+.m-input::placeholder{color:#b0b0b0}
+.btn-block{width:100%;padding:14px;background:#1945ff;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px}
+.btn-block:hover{background:#1538d0}
+.btn-block-ghost{width:100%;padding:10px;background:none;border:none;font-size:14px;font-weight:600;cursor:pointer;color:#161616;font-family:inherit;margin-top:4px}
+
+/* === FILTER SIDE PANEL === */
+.table-layout{display:flex;flex:1 1 auto;min-height:0;min-width:0;margin:0 0 24px;transition:margin-bottom .2s ease}
+.table-layout .table-card{flex:1 1 auto;min-width:0;margin:0}
+.filter-panel{display:flex;flex:0 0 0;width:0;min-height:0;overflow:hidden;background:var(--c-surface);border:0 solid var(--c-border);border-radius:16px;transition:flex-basis .25s ease,width .25s ease,opacity .2s ease,border-width 0s linear .25s,margin-right 0s linear .25s;opacity:0;box-sizing:border-box;margin-right:0}
+.filter-panel.open{flex:0 0 320px;width:320px;opacity:1;border-width:1px;margin-right:16px;transition:flex-basis .25s ease,width .25s ease,opacity .2s ease,border-width 0s linear 0s,margin-right 0s linear 0s}
+.filter-panel-inner{width:320px;flex:1 1 auto;min-height:0;padding:0;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden}
+.filter-panel-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--c-surface);border-bottom:1px solid var(--c-border);box-sizing:border-box;min-height:60px}
+.filter-panel-title{font-family:inherit;font-size:16px;line-height:24px;font-weight:600;color:var(--c-content-primary)}
+.filter-panel-close{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--c-content-primary);border-radius:8px;cursor:pointer;transition:background .12s}
+.filter-panel-close:hover{background:var(--c-secondary-container)}
+.filter-panel-close svg{width:18px;height:18px}
+.filter-panel-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:4px}
+.filter-panel-section{margin-bottom:16px}
+.filter-panel-section:last-child{margin-bottom:0}
+.filter-panel-section .modal-label{font-size:12px;color:var(--c-content-secondary);font-weight:500;margin-bottom:8px}
+.filter-panel-footer{position:sticky;bottom:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px 20px;background:var(--c-surface);border-top:1px solid var(--c-border);box-shadow:0 -4px 8px -8px rgba(0,0,0,.12)}
+.filter-panel-footer .fp-count{font-size:14px;line-height:20px;color:var(--c-content-secondary);font-feature-settings:'lnum' 1,'tnum' 1}
+.filter-panel-footer .fp-reset{border:1px solid var(--c-border-strong);background:var(--c-surface);color:var(--c-content-primary);height:32px;padding:0 16px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;line-height:20px;cursor:pointer;transition:background .12s,border-color .12s}
+.filter-panel-footer .fp-reset:hover{background:var(--c-surface-container)}
+.filter-btn.active{background:rgba(22,22,22,.12);border-color:var(--c-border-strong);color:var(--c-content-primary)}
+.filter-btn.active:hover{background:rgba(22,22,22,.12);border-color:var(--c-border-strong)}
+.filter-btn.has-filters{background:var(--c-primary-container);border-color:transparent;color:var(--c-on-primary-container)}
+.filter-btn.has-filters:hover{background:var(--c-primary-container);border-color:transparent}
+.filter-btn.has-filters.active{background:var(--c-primary-container);border-color:transparent;color:var(--c-on-primary-container)}
+@media (max-width:1024px){
+  .table-layout{flex-direction:column;gap:0}
+  .filter-panel{position:fixed;top:0;left:0;bottom:0;height:100vh;width:0;flex:none;z-index:90;border-radius:0;border:none;box-shadow:0 0 20px rgba(0,0,0,.15)}
+  .filter-panel.open{width:min(360px,90vw)}
+  .filter-panel-inner{width:min(360px,90vw)}
+  .filter-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:80;opacity:0;pointer-events:none;transition:opacity .2s ease}
+  .filter-backdrop.open{opacity:1;pointer-events:auto}
+}
+.filter-backdrop{display:none}
+@media (max-width:1024px){.filter-backdrop{display:block}}
+
+/* Set Rebate Modal */
+.rebate-modal{width:500px}
+.field-row{display:flex;gap:12px;margin-bottom:20px}
+.field-row>div{flex:1}
+.field label{display:block;font-size:12px;color:#6f6f6f;margin-bottom:6px}
+.field input,.field select{width:100%;padding:10px 14px;border:1.5px solid #d9d9d9;border-radius:8px;font-size:14px;font-family:inherit;outline:none;background:#fff;color:#161616}
+.field input:focus,.field select:focus{border-color:#1945ff}
+.field select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+.time-row{display:flex;align-items:flex-end;gap:8px}
+.pm-toggle{display:flex;border:1.5px solid #d9d9d9;border-radius:6px;overflow:hidden}
+.pm-toggle span{padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.pm-toggle span.on{background:#1945ff;color:#fff}
+.day-row{display:flex;gap:6px;margin-bottom:16px}
+.day-btn{width:48px;height:36px;border:1.5px solid #d9d9d9;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;font-family:inherit;color:#161616}
+.day-btn.on{background:#1945ff;color:#fff;border-color:#1945ff}
+.day-btn:hover{border-color:#999}
+.info-text{font-size:13px;color:#6f6f6f;line-height:1.5;margin-bottom:20px}
+
+/* Toast */
+.toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:12px;font-size:14px;z-index:200;display:none;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.15);white-space:nowrap;font-weight:500}
+.toast.show{display:flex}
+.toast-success{background:#17882c;color:#fff}
+.toast-error{background:#dc2626;color:#fff}
+.toast svg{flex-shrink:0}
+.toast-undo{font-weight:700;cursor:pointer;margin-left:20px}
+.toast-x{cursor:pointer;margin-left:16px;opacity:.8;font-size:18px}
+.toast-x:hover{opacity:1}
+
+/* Bottom bar — matches Figma "Выбраны разные статусы" (different statuses selected) layout. White rounded popup with notification-style multi-layer drop shadow, left section [close icon + count label], right section [1–3 action buttons sized to selected statuses]. */
+.bottom-bar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#fff;border-radius:16px;box-shadow:0 16px 24px rgba(0,0,0,0.10),0 2px 30px rgba(0,0,0,0.08),0 8px 10px rgba(0,0,0,0.14);padding:16px;z-index:50;display:none;align-items:center;gap:32px;white-space:nowrap;max-width:calc(100vw - 48px)}
+.bottom-bar.show{display:flex}
+.bb-left{display:flex;align-items:center;gap:16px;min-width:0}
+.bb-close{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:transparent;border:none;border-radius:8px;cursor:pointer;color:var(--c-content-primary);padding:0;flex-shrink:0;transition:background .12s}
+.bb-close:hover{background:var(--c-surface-container)}
+.bb-close:focus-visible{outline:2px solid var(--c-primary);outline-offset:2px}
+.bb-close svg{width:24px;height:24px}
+.bb-text-group{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bb-text{font-size:14px;line-height:20px;font-weight:600;color:var(--c-content-primary);white-space:nowrap}
+/* Secondary label that appears only when the user has selected rows that are filtered out of the current chip view (e.g. selected via "All", then switched to "Setup required"). Reassures the user that their out-of-view selection is preserved. */
+.bb-hidden{font-size:12px;line-height:16px;color:var(--c-content-tertiary);white-space:nowrap}
+.bb-hidden::before{content:"·";margin-right:6px;color:var(--c-content-tertiary)}
+.bb-actions{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.bb-btn{display:inline-flex;align-items:center;justify-content:center;height:32px;min-width:128px;padding:0 16px;border:none;border-radius:8px;font-family:inherit;font-size:14px;line-height:20px;font-weight:600;letter-spacing:0;cursor:pointer;white-space:nowrap;transition:background .12s}
+.bb-btn:focus-visible{outline:2px solid var(--c-primary);outline-offset:2px}
+.bb-btn-primary{background:var(--c-primary);color:#fff}
+.bb-btn-primary:hover{background:#1538d0}
+.bb-btn-primary:active{background:#0f2da8}
+.bb-btn-secondary{background:rgba(22,22,22,0.08);color:var(--c-content-primary)}
+.bb-btn-secondary:hover{background:rgba(22,22,22,0.12)}
+.bb-btn-secondary:active{background:rgba(22,22,22,0.16)}
+/* Narrow-viewport adaptation (mobile / split-screen). Stack the buttons vertically and let them stretch to fill the bar width; also remove the 180px min-width since it would force horizontal scroll. Matches the "mobile" variant of the bar in the Figma section. */
+@media (max-width:720px){
+  .bottom-bar{flex-direction:column;align-items:stretch;gap:16px;left:24px;right:24px;transform:none;max-width:none}
+  .bb-left{justify-content:flex-start}
+  .bb-actions{flex-direction:column;align-items:stretch;gap:8px;width:100%}
+  .bb-btn{width:100%;min-width:0}
+}
+
+/* Stats */
+.stats{display:flex;padding:24px 0 0;flex-shrink:0}
+.stat{flex:1;padding:0 16px;text-align:center}
+.stat:not(:last-child){border-right:1px solid var(--c-border)}
+.stat-val{font-family:'Inter Display','Inter',-apple-system,BlinkMacSystemFont,sans-serif;font-size:20px;line-height:24px;font-weight:600;color:var(--c-content-primary);letter-spacing:-.2px;font-feature-settings:'lnum' 1,'tnum' 1}
+.stat-lbl{font-size:12px;line-height:16px;color:var(--c-content-tertiary);margin-top:4px;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.stat-lbl a{color:var(--c-primary);font-weight:500}
+
+/* Empty */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px 24px;gap:24px;min-height:320px;height:100%}
+.empty .empty-illu{width:120px;height:120px;flex-shrink:0;display:grid;place-items:center;overflow:hidden}
+.empty .empty-illu img{width:100px;height:79px;display:block}
+.empty .empty-text{display:flex;flex-direction:column;align-items:center;gap:8px;max-width:440px}
+.empty h3{font-size:18px;line-height:24px;font-weight:600;color:var(--c-content-primary);margin:0}
+.empty p{font-size:14px;line-height:20px;color:var(--c-content-secondary);margin:0;white-space:pre-line}
+.empty .empty-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.empty .btn-primary{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 24px;border:none;border-radius:8px;background:var(--c-primary);color:#fff;font-size:14px;font-weight:600;line-height:20px;cursor:pointer;transition:background .15s}
+.empty .btn-primary:hover{background:#1538d0}
+.empty .btn-secondary{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 24px;border:1px solid var(--c-border-strong);border-radius:8px;background:var(--c-surface);color:var(--c-content-primary);font-size:14px;font-weight:600;line-height:20px;cursor:pointer;transition:background .15s,border-color .15s}
+.empty .btn-secondary:hover{background:var(--c-secondary-container);border-color:var(--c-content-secondary)}
+.empty .btn-secondary-s{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 16px;border:none;border-radius:8px;background:rgba(22,22,22,.15);color:var(--c-content-primary);font-family:inherit;font-size:14px;font-weight:600;line-height:20px;letter-spacing:0;cursor:pointer;transition:background .12s}
+.empty .btn-secondary-s:hover{background:rgba(22,22,22,.20)}
+.empty .btn-secondary-s:active{background:rgba(22,22,22,.25)}
+</style>
+</head>
+<body>
+
+<!-- ==================== MAIN SCREEN ==================== -->
+<div class="screen active" id="s-main">
+
+  <nav class="topnav">
+    <div class="logo">K</div>
+    <div class="nav-links">
+      <span class="nav-link">IB Dashboard</span>
+      <span class="nav-link">Revenue statistics</span>
+      <span class="nav-link active">Rebate sharing</span>
+      <span class="nav-link">Promo materials</span>
+    </div>
+    <button type="button" class="wallet">Wallet&nbsp;&nbsp;$0.00</button>
+    <button type="button" class="avatar" aria-label="Profile">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M1 16C1 3.64754 3.64754 1 16 1C28.3525 1 31 3.64754 31 16C31 28.3525 28.3525 31 16 31C3.64754 31 1 28.3525 1 16Z" fill="var(--c-surface-container)"/>
+        <g transform="translate(8.003 6)" fill="var(--c-content-primary)">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M7.99609 8C10.2052 8 11.9961 6.20914 11.9961 4C11.9961 1.79086 10.2052 0 7.99609 0C5.78695 0 3.99609 1.79086 3.99609 4C3.99609 6.20914 5.78695 8 7.99609 8ZM7.99609 6C9.10066 6 9.99609 5.10457 9.99609 4C9.99609 2.89543 9.10066 2 7.99609 2C6.89152 2 5.99609 2.89543 5.99609 4C5.99609 5.10457 6.89152 6 7.99609 6Z"/>
+          <path d="M2.55039 14.6279C2.73805 13.1266 4.01425 12 5.52722 12H10.465C11.9779 12 13.2541 13.1266 13.4418 14.6279L13.8643 17.9494C13.9407 18.5501 14.4528 18.9997 15.0583 18.9979L15.9939 18.9951L15.4263 14.3798C15.1136 11.8777 12.9866 10 10.465 10H5.52722C3.0056 10 0.878597 11.8777 0.565829 14.3798L0 19L0.940828 18.9982C1.54427 18.997 2.05297 18.5479 2.12893 17.9492L2.55039 14.6279Z"/>
+        </g>
+      </svg>
+    </button>
+  </nav>
+
+  <div class="content-wrap">
+    <div class="inner">
+    <div class="tabs-row">
+      <h1 class="page-heading">Rebate sharing</h1>
+      <div class="tabs" role="tablist" aria-label="View">
+        <button type="button" class="tab-item active" role="tab" aria-selected="true">Clients settings</button>
+        <button type="button" class="tab-item" role="tab" aria-selected="false" onclick="go('s-manage')">Manage payments</button>
+      </div>
+      <div class="tabs-right">
+        <div class="search-wrap" id="search-wrap-main">
+          <div class="tabs-action" role="button" tabindex="0" onclick="openSearch('main')" onkeydown="if(event.key==='Enter'||event.key===' ')openSearch('main')"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="5.25"/><path d="M12 12l3.5 3.5"/></svg> Search client</div>
+          <div class="search-input" role="search">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="5.25"/><path d="M12 12l3.5 3.5"/></svg>
+            <input type="text" placeholder="Search client" id="search-input-main" oninput="filterClients(this.value)" onkeydown="if(event.key==='Escape')closeSearch('main')" />
+            <button class="search-clear" type="button" aria-label="Close search" onclick="closeSearch('main')"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 5l8 8M13 5l-8 8"/></svg></button>
+          </div>
+        </div>
+        <div class="export-wrap">
+          <button type="button" class="icon-btn-text-s" aria-haspopup="menu" aria-expanded="false" aria-label="Export" title="Export" aria-controls="export-menu-main" onclick="toggleExportMenu('export-menu-main', this); event.stopPropagation()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 19h14"/></svg>
+          </button>
+          <div class="dropdown-menu" id="export-menu-main" role="menu" hidden>
+            <button class="dropdown-item" role="menuitem" onclick="exportData('csv','main')">Export to CSV</button>
+            <button class="dropdown-item" role="menuitem" onclick="exportData('xlsx','main')">Export to Excel (.xlsx)</button>
+            <button class="dropdown-item" role="menuitem" onclick="exportData('pdf','main')">Export to PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar" id="main-toolbar">
+      <div class="filter-btn" id="filter-btn-main" role="button" tabindex="0" aria-expanded="false" aria-controls="filter-panel-main" onclick="toggleFilterPanel('main')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleFilterPanel('main')}">
+        <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4.5h14M5 9h8M7.5 13.5h3"/></svg>
+        Filters
+      </div>
+      <div class="date-range-wrap">
+        <button type="button" class="date-range" id="date-trigger-main" aria-haspopup="dialog" aria-expanded="false" aria-controls="date-panel-main" onclick="toggleDatePopover('main')">
+          <span class="dr-label">Statistics</span><span class="dr-value">25.02.2026 — 03.03.2026</span>
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><rect x="2.5" y="3.5" width="13" height="12" rx="2"/><path d="M2.5 7.5h13M6 2v3M12 2v3"/></svg>
+        </button>
+      </div>
+      <div class="chips-group" id="chips" role="tablist">
+        <div class="chip active" data-f="all" role="tab" tabindex="0" aria-selected="true" onclick="flt(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flt(this);}"><span class="chip-label">All</span><span class="cnt">59</span></div>
+        <div class="chip" data-f="setup" role="tab" tabindex="0" aria-selected="false" onclick="flt(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flt(this);}"><span class="chip-label">Setup required</span><span class="cnt">34</span></div>
+        <div class="chip" data-f="active" role="tab" tabindex="0" aria-selected="false" onclick="flt(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flt(this);}"><span class="chip-label">Active rebate</span><span class="cnt">22</span></div>
+        <div class="chip" data-f="paused" role="tab" tabindex="0" aria-selected="false" onclick="flt(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flt(this);}"><span class="chip-label">Paused rebate</span><span class="cnt">3</span></div>
+      </div>
+    </div>
+
+    <div class="filter-backdrop" id="filter-backdrop-main" onclick="toggleFilterPanel('main')"></div>
+    <div class="filter-backdrop" id="date-backdrop-main" onclick="toggleDatePopover('main')"></div>
+    <div class="table-layout">
+    <aside class="filter-panel date-panel" id="date-panel-main" data-kind="date-main" role="dialog" aria-label="Date range">
+      <div class="filter-panel-inner">
+        <div class="filter-panel-header">
+          <span class="filter-panel-title">Date range</span>
+          <button type="button" class="filter-panel-close" aria-label="Close date range" onclick="toggleDatePopover('main')">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 4l10 10M14 4L4 14"/></svg>
+          </button>
+        </div>
+        <div class="filter-panel-scroll">
+          <div class="filter-panel-section">
+            <div class="modal-label">Period</div>
+            <div class="m-chips">
+              <span class="m-chip xs" data-period="1" onclick="datePreset(this,'main')">1 day</span>
+              <span class="m-chip xs sel" data-period="7" onclick="datePreset(this,'main')">7 days</span>
+              <span class="m-chip xs" data-period="14" onclick="datePreset(this,'main')">14 days</span>
+              <span class="m-chip xs" data-period="30" onclick="datePreset(this,'main')">30 days</span>
+              <span class="m-chip xs" data-period="90" onclick="datePreset(this,'main')">90 days</span>
+              <span class="m-chip xs" data-period="all" onclick="datePreset(this,'main')">All time</span>
+            </div>
+          </div>
+          <div class="filter-panel-section">
+            <div class="date-panel-dates">
+              <div class="date-field" id="date-field-start-main"><div class="modal-label">Start date</div><input class="m-input" id="date-start-main" value="25.02.2026" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="DD.MM.YYYY" oninput="onDateInput(this,'main','start')" onblur="onDateBlur(this,'main','start')"><div class="field-error" id="date-error-start-main"></div></div>
+              <div class="date-field" id="date-field-end-main"><div class="modal-label">End date</div><input class="m-input" id="date-end-main" value="03.03.2026" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="DD.MM.YYYY" oninput="onDateInput(this,'main','end')" onblur="onDateBlur(this,'main','end')"><div class="field-error" id="date-error-end-main"></div></div>
+            </div>
+          </div>
+          <div class="filter-panel-section">
+            <div class="cal" id="cal-main">
+              <div class="cal-nav">
+                <button type="button" class="cal-nav-btn" id="cal-prev-main" aria-label="Previous month" onclick="calNav('main',-1)">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg>
+                </button>
+                <div class="cal-title" id="cal-title-main">February 2026</div>
+                <button type="button" class="cal-nav-btn" id="cal-next-main" aria-label="Next month" onclick="calNav('main',1)">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>
+                </button>
+              </div>
+              <div class="cal-grid" id="cal-wd-main"></div>
+              <div class="cal-grid" id="cal-grid-main"></div>
+            </div>
+          </div>
+        </div>
+        <div class="filter-panel-footer">
+          <span class="fp-count" id="date-count-main">7 days selected</span>
+          <button type="button" class="fp-reset" onclick="dateReset('main')">Reset</button>
+        </div>
+      </div>
+    </aside>
+    <aside class="filter-panel" id="filter-panel-main" data-kind="main" aria-label="Filters">
+      <div class="filter-panel-inner">
+        <div class="filter-panel-header">
+          <span class="filter-panel-title">Filters</span>
+          <button type="button" class="filter-panel-close" aria-label="Close filters" onclick="toggleFilterPanel('main')">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 4l10 10M14 4L4 14"/></svg>
+          </button>
+        </div>
+        <div class="filter-panel-scroll">
+          <div class="filter-panel-section" data-filter-group="accountType"><div class="modal-label">Account type</div><div class="m-chips"><span class="m-chip sel" data-value="all" onclick="onPanelChipClick(this)">All</span><span class="m-chip" data-value="trading" onclick="onPanelChipClick(this)">Trading</span><span class="m-chip" data-value="copytrading" onclick="onPanelChipClick(this)">Copytrading</span></div></div>
+          <div class="filter-panel-section" data-filter-group="activity"><div class="modal-label">Clients activity</div><div class="m-chips"><span class="m-chip sel" data-value="all" onclick="onPanelChipClick(this)">All</span><span class="m-chip" data-value="active" onclick="onPanelChipClick(this)">Active</span><span class="m-chip" data-value="inactive" onclick="onPanelChipClick(this)">Inactive</span><span class="m-chip" data-value="unsubsribed" onclick="onPanelChipClick(this)">Unsubsribed</span></div></div>
+          <div class="filter-panel-section" data-filter-group="rebatePct"><div class="modal-label">Rebate percentage</div><div style="position:relative"><input class="m-input" placeholder="From 1 to 99" oninput="onPanelInputInput(this)"><span style="position:absolute;right:14px;top:10px;color:var(--c-content-secondary);font-size:14px">%</span></div></div>
+          <div class="filter-panel-section" data-filter-group="rebateSetting"><div class="modal-label">Rebate settings</div><div class="m-chips"><span class="m-chip sel" data-value="all" onclick="onPanelChipClick(this)">All</span><span class="m-chip" data-value="manual" onclick="onPanelChipClick(this)">Manual</span><span class="m-chip" data-value="auto" onclick="onPanelChipClick(this)">Auto</span><span class="m-chip" data-value="auto daily" onclick="onPanelChipClick(this)">Auto daily</span><span class="m-chip" data-value="auto weekly" onclick="onPanelChipClick(this)">Auto weekly</span><span class="m-chip" data-value="auto monthly" onclick="onPanelChipClick(this)">Auto monthly</span></div></div>
+        </div>
+        <div class="filter-panel-footer">
+          <span class="fp-count" data-default="59 clients">59 clients</span>
+          <button type="button" class="fp-reset" onclick="resetPanelFilters('main')">Reset</button>
+        </div>
+      </div>
+    </aside>
+    <div class="table-card">
+    <table class="tbl" id="tbl-main">
+      <colgroup><col class="col-cb"><col class="col-client"><col class="col-profit"><col class="col-lots"><col class="col-activity"><col class="col-settings"><col class="col-status"></colgroup>
+      <thead><tr>
+        <th><div class="checkbox" id="cb-all" onclick="selAll()"></div></th>
+        <th class="th-sortable" data-sort-key="n" onclick="sortBy('main','n')"><span class="th-label">Client <span class="sort-arrows"><svg viewBox="0 0 16 16" fill="currentColor"><path class="sa-up" d="M8 2L4 7H12L8 2Z"/><path class="sa-down" d="M8 14L4 9H12L8 14Z"/></svg></span><button type="button" class="th-pin-badge" id="pin-badge-main" aria-pressed="false" hidden onclick="event.stopPropagation();togglePinAffected('main')" onkeydown="event.stopPropagation()" title="Click to pin clients with reduced commission to top"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M8 5v3.5M8 10.5v.7" stroke-linecap="round"/></svg><span class="tpb-count">0</span></button></span></th>
+        <th class="th-sortable" data-sort-key="pr" onclick="sortBy('main','pr')"><span class="th-label">IB profit <span class="sort-arrows"><svg viewBox="0 0 16 16" fill="currentColor"><path class="sa-up" d="M8 2L4 7H12L8 2Z"/><path class="sa-down" d="M8 14L4 9H12L8 14Z"/></svg></span></span></th>
+        <th class="th-sortable" data-sort-key="lo" onclick="sortBy('main','lo')"><span class="th-label">Traded lots <span class="sort-arrows"><svg viewBox="0 0 16 16" fill="currentColor"><path class="sa-up" d="M8 2L4 7H12L8 2Z"/><path class="sa-down" d="M8 14L4 9H12L8 14Z"/></svg></span></span></th>
+        <th class="th-sortable" data-sort-key="act" onclick="sortBy('main','act')"><span class="th-label">Activity <span class="sort-arrows"><svg viewBox="0 0 16 16" fill="currentColor"><path class="sa-up" d="M8 2L4 7H12L8 2Z"/><path class="sa-down" d="M8 14L4 9H12L8 14Z"/></svg></span></span><span class="sub">Join IB date</span></th>
+        <th class="th-sortable" data-sort-key="rs" onclick="sortBy('main','rs')"><span class="th-label">Rebate settings <span class="sort-arrows"><svg viewBox="0 0 16 16" fill="currentColor"><path class="sa-up" d="M8 2L4 7H12L8 2Z"/><path class="sa-down" d="M8 14L4 9H12L8 14Z"/></svg></span></span><span class="sub">Period payout</span></th>
+        <th><span class="th-label">Rebate status</span></th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty-box" style="display:none">
+      <div class="empty-illu" aria-hidden="true"><img src="assets/empty-clients.svg" alt=""></div>
+      <div class="empty-text"><h3 id="e-title"></h3><p id="e-desc"></p></div>
+      <div class="empty-actions" id="e-btns"></div>
+    </div>
+    </div>
+    </div>
+  </div></div>
+
+  <div class="bottom-bar" id="bb">
+    <div class="bb-left">
+      <button type="button" class="bb-close" onclick="clrSel()" aria-label="Clear selection (Esc)" title="Clear selection (Esc)"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.5858 12L5.29289 6.70711L6.70711 5.29289L12 10.5858L17.2929 5.29289L18.7071 6.70711L13.4142 12L18.7071 17.2929L17.2929 18.7071L12 13.4142L6.70711 18.7071L5.29289 17.2929L10.5858 12Z"/></svg></button>
+      <div class="bb-text-group">
+        <span class="bb-text" id="bb-txt"></span>
+        <span class="bb-hidden" id="bb-hidden" hidden></span>
+      </div>
+    </div>
+    <div class="bb-actions" id="bb-actions"></div>
+  </div>
+</div>
+
+<!-- ==================== MANAGE PAYMENTS ==================== -->
+<div class="screen" id="s-manage">
+  <nav class="topnav">
+    <div class="logo">K</div>
+    <div class="nav-links"><span class="nav-link">IB Dashboard</span><span class="nav-link">Revenue statistics</span><span class="nav-link active">Rebate sharing</span><span class="nav-link">Promo materials</span></div>
+    <button type="button" class="wallet">Wallet&nbsp;&nbsp;$0.00</button>
+    <button type="button" class="avatar" aria-label="Profile">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M1 16C1 3.64754 3.64754 1 16 1C28.3525 1 31 3.64754 31 16C31 28.3525 28.3525 31 16 31C3.64754 31 1 28.3525 1 16Z" fill="var(--c-surface-container)"/>
+        <g transform="translate(8.003 6)" fill="var(--c-content-primary)">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M7.99609 8C10.2052 8 11.9961 6.20914 11.9961 4C11.9961 1.79086 10.2052 0 7.99609 0C5.78695 0 3.99609 1.79086 3.99609 4C3.99609 6.20914 5.78695 8 7.99609 8ZM7.99609 6C9.10066 6 9.99609 5.10457 9.99609 4C9.99609 2.89543 9.10066 2 7.99609 2C6.89152 2 5.99609 2.89543 5.99609 4C5.99609 5.10457 6.89152 6 7.99609 6Z"/>
+          <path d="M2.55039 14.6279C2.73805 13.1266 4.01425 12 5.52722 12H10.465C11.9779 12 13.2541 13.1266 13.4418 14.6279L13.8643 17.9494C13.9407 18.5501 14.4528 18.9997 15.0583 18.9979L15.9939 18.9951L15.4263 14.3798C15.1136 11.8777 12.9866 10 10.465 10H5.52722C3.0056 10 0.878597 11.8777 0.565829 14.3798L0 19L0.940828 18.9982C1.54427 18.997 2.05297 18.5479 2.12893 17.9492L2.55039 14.6279Z"/>
+        </g>
+      </svg>
+    </button>
+  </nav>
+  <div class="content-wrap">
+    <div class="inner">
+    <div class="tabs-row">
+      <h1 class="page-heading">Rebate sharing</h1>
+      <div class="tabs" role="tablist" aria-label="View">
+        <button type="button" class="tab-item" role="tab" aria-selected="false" onclick="go('s-main')">Clients settings</button>
+        <button type="button" class="tab-item active" role="tab" aria-selected="true">Manage payments</button>
+      </div>
+      <div class="tabs-right">
+        <div class="search-wrap" id="search-wrap-mp">
+          <div class="tabs-action" role="button" tabindex="0" onclick="openSearch('mp')" onkeydown="if(event.key==='Enter'||event.key===' ')openSearch('mp')"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="5.25"/><path d="M12 12l3.5 3.5"/></svg> Search client</div>
+          <div class="search-input" role="search">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="5.25"/><path d="M12 12l3.5 3.5"/></svg>
+            <input type="text" placeholder="Search client" id="search-input-mp" oninput="filterPayments(this.value)" onkeydown="if(event.key==='Escape')closeSearch('mp')" />
+            <button class="search-clear" type="button" aria-label="Close search" onclick="closeSearch('mp')"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 5l8 8M13 5l-8 8"/></svg></button>
+          </div>
+        </div>
+        <div class="export-wrap">
+          <button type="button" class="icon-btn-text-s" aria-haspopup="menu" aria-expanded="false" aria-label="Export" title="Export" aria-controls="export-menu-mp" onclick="toggleExportMenu('export-menu-mp', this); event.stopPropagation()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 19h14"/></svg>
+          </button>
+          <div class="dropdown-menu" id="export-menu-mp" role="menu" hidden>
+            <button class="dropdown-item" role="menuitem" onclick="exportData('csv','mp')">Export to CSV</button>
+            <button class="dropdown-item" role="menuitem" onclick="exportData('xlsx','mp')">Export to Excel (.xlsx)</button>
+            <button class="dropdown-item" role="menuitem" onclick="exportData('pdf','mp')">Export to PDF</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val">$175,334,667</div>
+        <div class="stat-lbl">Total Rebate paid <a href="#">View history</a></div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">$575,869,556</div>
+        <div class="stat-lbl">Total accrued IB profit <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 7v4M8 5.2v.1" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">$5,334,667</div>
+        <div class="stat-lbl">Total Rebate next pay <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 7v4M8 5.2v.1" stroke-linecap="round"/></svg></div>
+      </div>
+    </div>
+    <div class="toolbar" id="mp-toolbar">
+      <div class="filter-btn" id="filter-btn-mp" role="button" tabindex="0" aria-expanded="false" aria-controls="filter-panel-mp" onclick="toggleFilterPanel('mp')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleFilterPanel('mp')}"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4.5h14M5 9h8M7.5 13.5h3"/></svg> Filters</div>
+      <div class="date-range"><span class="dr-label">Next pay</span>25.02.2026 — 03.03.2026 <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><rect x="2.5" y="3.5" width="13" height="12" rx="2"/><path d="M2.5 7.5h13M6 2v3M12 2v3"/></svg></div>
+      <div class="chips-group">
+        <div class="chip active"><span class="chip-label">All</span><span class="cnt">25</span></div>
+        <div class="chip"><span class="chip-label">Auto scheduled</span><span class="cnt">15</span></div>
+        <div class="chip"><span class="chip-label">Awaiting confirmation</span><span class="cnt">7</span></div>
+        <div class="chip"><span class="chip-label">Paused payout</span><span class="cnt">3</span></div>
+      </div>
+    </div>
+    <div class="filter-backdrop" id="filter-backdrop-mp" onclick="toggleFilterPanel('mp')"></div>
+    <div class="table-layout">
+    <aside class="filter-panel" id="filter-panel-mp" data-kind="mp" aria-label="Filters Manage payments">
+      <div class="filter-panel-inner">
+        <div class="filter-panel-header">
+          <span class="filter-panel-title">Filters Manage payments</span>
+          <button type="button" class="filter-panel-close" aria-label="Close filters" onclick="toggleFilterPanel('mp')">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 4l10 10M14 4L4 14"/></svg>
+          </button>
+        </div>
+        <div class="filter-panel-scroll">
+          <div class="filter-panel-section" data-filter-group="accountType"><div class="modal-label">Account type</div><div class="m-chips"><span class="m-chip sel" data-value="all" onclick="onPanelChipClick(this)">All</span><span class="m-chip" data-value="trading" onclick="onPanelChipClick(this)">Trading</span><span class="m-chip" data-value="copytrading" onclick="onPanelChipClick(this)">Copytrading</span></div></div>
+          <div class="filter-panel-section" data-filter-group="rebatePct"><div class="modal-label">Rebate percentage</div><div style="position:relative"><input class="m-input" placeholder="From 1 to 99" oninput="onPanelInputInput(this)"><span style="position:absolute;right:14px;top:10px;color:var(--c-content-secondary);font-size:14px">%</span></div></div>
+          <div class="filter-panel-section" data-filter-group="rebateSetting"><div class="modal-label">Rebate settings</div><div class="m-chips"><span class="m-chip sel" data-value="all" onclick="onPanelChipClick(this)">All</span><span class="m-chip" data-value="manual" onclick="onPanelChipClick(this)">Manual</span><span class="m-chip" data-value="auto" onclick="onPanelChipClick(this)">Auto</span><span class="m-chip" data-value="auto daily" onclick="onPanelChipClick(this)">Auto daily</span><span class="m-chip" data-value="auto weekly" onclick="onPanelChipClick(this)">Auto weekly</span><span class="m-chip" data-value="auto monthly" onclick="onPanelChipClick(this)">Auto monthly</span></div></div>
+        </div>
+        <div class="filter-panel-footer">
+          <span class="fp-count" data-default="25 payments">25 payments</span>
+          <button type="button" class="fp-reset" onclick="resetPanelFilters('mp')">Reset</button>
+        </div>
+      </div>
+    </aside>
+    <div class="table-card">
+    <table class="tbl">
+      <colgroup><col class="col-cb"><col class="col-client"><col class="col-profit"><col class="col-lots"><col class="col-settings"><col class="col-trend"><col class="col-status"></colgroup>
+      <thead><tr>
+        <th><div class="checkbox"></div></th>
+        <th class="th-sortable" data-sort-key="n" onclick="sortBy('mp','n')"><span class="th-label">Client <span class="sort-arrows"><svg viewBox="0 0 16 16" fill="currentColor"><path class="sa-up" d="M8 2L4 7H12L8 2Z"/><path class="sa-down" d="M8 14L4 9H12L8 14Z"/></svg></span><button type="button" class="th-pin-badge" id="pin-badge-mp" aria-pressed="false" hidden onclick="event.stopPropagation();togglePinAffected('mp')" onkeydown="event.stopPropagation()" title="Click to pin clients with reduced commission to top"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M8 5v3.5M8 10.5v.7" stroke-linecap="round"/></svg><span class="tpb-count">0</span></button></span></th>
+        <th class="th-sortable" data-sort-key="pd" onclick="sortBy('mp','pd')"><span class="th-label">All rebate paid <span class="sort-arrows"><svg viewBox="0 0 16 16" fill="currentColor"><path class="sa-up" d="M8 2L4 7H12L8 2Z"/><path class="sa-down" d="M8 14L4 9H12L8 14Z"/></svg></span></span><span class="sub">Starting from</span></th>
+        <th class="th-sortable" data-sort-key="ac" onclick="sortBy('mp','ac')"><span class="th-label">Accrued IB profit <span class="sort-arrows"><svg viewBox="0 0 16 16" fill="currentColor"><path class="sa-up" d="M8 2L4 7H12L8 2Z"/><path class="sa-down" d="M8 14L4 9H12L8 14Z"/></svg></span></span><span class="sub">From event date</span></th>
+        <th class="th-sortable" data-sort-key="rs" onclick="sortBy('mp','rs')"><span class="th-label">Rebate settings <span class="sort-arrows"><svg viewBox="0 0 16 16" fill="currentColor"><path class="sa-up" d="M8 2L4 7H12L8 2Z"/><path class="sa-down" d="M8 14L4 9H12L8 14Z"/></svg></span></span><span class="sub">Period payout</span></th>
+        <th class="th-sortable" data-sort-key="np" onclick="sortBy('mp','np')"><span class="th-label">Next pay <span class="sort-arrows"><svg viewBox="0 0 16 16" fill="currentColor"><path class="sa-up" d="M8 2L4 7H12L8 2Z"/><path class="sa-down" d="M8 14L4 9H12L8 14Z"/></svg></span></span><span class="sub">Payment date</span></th>
+        <th><span class="th-label">Payout status</span></th>
+      </tr></thead>
+      <tbody id="tbody-mp"></tbody>
+    </table>
+    <div class="empty" id="empty-box-mp" style="display:none">
+      <div class="empty-illu" aria-hidden="true"><img src="assets/empty-clients.svg" alt=""></div>
+      <div class="empty-text"><h3 id="e-title-mp"></h3><p id="e-desc-mp"></p></div>
+      <div class="empty-actions" id="e-btns-mp"></div>
+    </div>
+    </div>
+    </div>
+  </div></div>
+</div>
+
+<!-- ==================== FILTERS DIALOG ==================== -->
+<div class="overlay" id="dlg-filters">
+  <div class="modal" style="width:460px">
+    <div class="modal-header"><span class="modal-title">Filters clients settings</span><button class="modal-x" onclick="closeModal('dlg-filters')">✕</button></div>
+    <div class="modal-section"><div class="modal-label">Account type</div><div class="m-chips"><span class="m-chip sel" onclick="mchip(this)">All</span><span class="m-chip" onclick="mchip(this)">Trading</span><span class="m-chip" onclick="mchip(this)">Copytrading</span></div></div>
+    <div class="modal-section"><div class="modal-label">Clients activity</div><div class="m-chips"><span class="m-chip sel" onclick="mchip(this)">All</span><span class="m-chip" onclick="mchip(this)">Active</span><span class="m-chip" onclick="mchip(this)">Inactive</span><span class="m-chip" onclick="mchip(this)">Unsubsribed</span></div></div>
+    <div class="modal-section"><div class="modal-label">Rebate percentage</div><div style="position:relative"><input class="m-input" placeholder="From 1 to 99"><span style="position:absolute;right:14px;top:10px;color:#6f6f6f;font-size:14px">%</span></div></div>
+    <div class="modal-section"><div class="modal-label">Rebate settings</div><div class="m-chips"><span class="m-chip sel" onclick="mchip(this)">All</span><span class="m-chip" onclick="mchip(this)">Manual</span><span class="m-chip" onclick="mchip(this)">Auto</span><span class="m-chip" onclick="mchip(this)">Auto daily</span><span class="m-chip" onclick="mchip(this)">Auto weekly</span><span class="m-chip" onclick="mchip(this)">Auto monthly</span></div></div>
+    <button class="btn-block" onclick="closeModal('dlg-filters')">Apply filters</button>
+  </div>
+</div>
+
+<!-- ==================== SET REBATE DIALOG ==================== -->
+<div class="overlay" id="dlg-rebate">
+  <div class="modal rebate-modal">
+    <div class="modal-header"><span class="modal-title">Set Rebate Sharing for Alfonso Siphron</span><button class="modal-x" onclick="closeModal('dlg-rebate')">✕</button></div>
+    <div class="field-row">
+      <div class="field" style="position:relative"><label>Rebate percentage</label><input value="30.0"><span style="position:absolute;right:14px;bottom:10px;color:#525252">%</span></div>
+      <div class="field"><label>Rebate type</label><select><option>Auto Weekly</option><option>Auto Daily</option><option>Auto Monthly</option><option>Manual</option></select></div>
+    </div>
+    <div style="font-size:14px;font-weight:600;margin-bottom:16px">Automatic rebate settings</div>
+    <div class="field-row">
+      <div class="field"><label>Time of payment</label><div class="time-row"><input value="09:00" style="width:80px"><div class="pm-toggle"><span class="on">PM</span><span>AM</span></div></div></div>
+      <div class="field"><label>Time zone</label><select><option>(GMT+07:00) Weste...</option></select></div>
+    </div>
+    <label style="display:block;font-size:12px;color:#6f6f6f;margin-bottom:8px">Payment day of the week</label>
+    <div class="day-row"><button class="day-btn on">Mon</button><button class="day-btn">Tue</button><button class="day-btn">Wed</button><button class="day-btn">Thu</button><button class="day-btn">Fri</button><button class="day-btn">Sat</button><button class="day-btn">Sun</button></div>
+    <p class="info-text">Next automatic payout is on 09.03.2026, at 9:00 PM (GMT+07:00). You can change the rebate percentage, payout schedule, or pause the rebate later.</p>
+    <button class="btn-block" onclick="confirmRebate()">Confirm settings</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast toast-success" id="toast-ok">
+  <svg width="20" height="20" fill="none"><circle cx="10" cy="10" r="9" stroke="#fff" stroke-width="1.5"/><path d="M6 10l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span id="toast-msg">Alfonso Siphron is set up for 30% auto weekly payments</span>
+  <span class="toast-undo">Undo</span>
+  <span class="toast-x" onclick="document.getElementById('toast-ok').classList.remove('show')">✕</span>
+</div>
+
+<script>
+const TREND_UP_GLYPH='<span class="trend-arrow" aria-hidden="true">\u2191</span>';
+const TREND_DOWN_GLYPH='<span class="trend-arrow" aria-hidden="true">\u2193</span>';
+const DATA=[
+  {n:'Alfonso Siphron',s:'2 Trading accounts',pr:'$30.00',lo:'30.46',act:'Active',dt:'20.02.21',tr:'12%',tc:'trend-up',vtr:'8%',vtc:'trend-up',rs:'0% Never set',rp:'No payout schedule',st:'Setup required',sc:'tag-setup',f:'setup'},
+  {n:'Alfonso Siphron',s:'Copy trading account',pr:'$23.00',lo:'45.58',act:'Inactive',dt:'26.03.25',tr:'30%',tc:'trend-down',vtr:'22%',vtc:'trend-down',rs:'0% Never set',rp:'No payout schedule',st:'Setup required',sc:'tag-setup',f:'setup'},
+  {n:'Corey Rosser',s:'5 Trading account',pr:'$12.67',lo:'34.23',act:'Active',dt:'20.02.25',tr:'4%',tc:'trend-up',vtr:'6%',vtc:'trend-up',rs:'20% Manual',rp:'After confirmation',st:'Active rebate',sc:'tag-active',f:'active'},
+  {n:'TerryPassaquindici',s:'Copy trading account',pr:'$30.33',lo:'21.45',act:'Active',dt:'20.02.26',tr:'1%',tc:'trend-up',vtr:'2%',vtc:'trend-up',rs:'10% Manual',rp:'After confirmation',st:'Active rebate',sc:'tag-active',f:'active'},
+  {n:'id7585585',s:'23 Trading accounts',pr:'$9.00',lo:'10.13',act:'Active',dt:'20.02.26',tr:'1%',tc:'trend-down',vtr:'3%',vtc:'trend-down',rs:'80% Auto weekly',rp:'Thu 09:00 AM, GMT-8',st:'Paused',sc:'tag-paused',f:'paused',alert:1,alertFrom:'0.8 USD/lot',alertTo:'0.5 USD/lot',alertDate:'26.05.2026'},
+  {n:'Cheyenne George',s:'1 Trading account',pr:'$0.00',lo:'0',act:'Inactive',dt:'20.02.26',tr:'0%',tc:'trend-flat',vtr:'0%',vtc:'trend-flat',rs:'0% Never set',rp:'No payout schedule',st:'Setup required',sc:'tag-setup',f:'setup'},
+  {n:'id869696',s:'Copy trading account',pr:'$12.00',lo:'1.98',act:'Active',dt:'20.02.26',tr:'2%',tc:'trend-down',vtr:'5%',vtc:'trend-down',rs:'10% Auto weekly',rp:'Thu 09:00 AM, GMT-8',st:'Active rebate',sc:'tag-active',f:'active'},
+  {n:'Marcus Webber',s:'3 Trading accounts',pr:'$45.20',lo:'52.10',act:'Active',dt:'15.02.26',tr:'8%',tc:'trend-up',vtr:'10%',vtc:'trend-up',rs:'25% Manual',rp:'After confirmation',st:'Active rebate',sc:'tag-active',f:'active',alert:1,alertFrom:'1.2 USD/lot',alertTo:'0.9 USD/lot',alertDate:'24.05.2026'},
+  {n:'Priscilla Adkins',s:'Copy trading account',pr:'$8.40',lo:'12.34',act:'Active',dt:'12.02.26',tr:'3%',tc:'trend-down',vtr:'1%',vtc:'trend-down',rs:'15% Auto weekly',rp:'Mon 10:00 AM, GMT-8',st:'Active rebate',sc:'tag-active',f:'active'},
+  {n:'id445221',s:'7 Trading accounts',pr:'$0.00',lo:'0',act:'Inactive',dt:'10.02.26',tr:'0%',tc:'trend-flat',vtr:'0%',vtc:'trend-flat',rs:'0% Never set',rp:'No payout schedule',st:'Setup required',sc:'tag-setup',f:'setup'},
+  {n:'Bernadette Lloyd',s:'2 Trading accounts',pr:'$67.89',lo:'78.45',act:'Active',dt:'08.02.26',tr:'15%',tc:'trend-up',vtr:'18%',vtc:'trend-up',rs:'30% Auto weekly',rp:'Fri 12:00 PM, GMT-8',st:'Active rebate',sc:'tag-active',f:'active',alert:1,alertFrom:'1.0 USD/lot',alertTo:'0.7 USD/lot',alertDate:'22.05.2026'},
+  {n:'Cornelius Ortega',s:'1 Trading account',pr:'$2.10',lo:'5.67',act:'Active',dt:'05.02.26',tr:'9%',tc:'trend-down',vtr:'4%',vtc:'trend-down',rs:'5% Manual',rp:'After confirmation',st:'Paused',sc:'tag-paused',f:'paused'},
+  {n:'id998877',s:'Copy trading account',pr:'$15.55',lo:'23.10',act:'Active',dt:'02.02.26',tr:'6%',tc:'trend-up',vtr:'8%',vtc:'trend-up',rs:'20% Auto weekly',rp:'Wed 09:00 AM, GMT-8',st:'Active rebate',sc:'tag-active',f:'active'},
+  {n:'Theodora Mills',s:'4 Trading accounts',pr:'$0.00',lo:'0',act:'Inactive',dt:'29.01.26',tr:'0%',tc:'trend-flat',vtr:'0%',vtc:'trend-flat',rs:'0% Never set',rp:'No payout schedule',st:'Setup required',sc:'tag-setup',f:'setup'},
+  {n:'Reginald Stoltz',s:'2 Trading accounts',pr:'$92.33',lo:'104.21',act:'Active',dt:'25.01.26',tr:'18%',tc:'trend-up',vtr:'14%',vtc:'trend-up',rs:'40% Manual',rp:'After confirmation',st:'Active rebate',sc:'tag-active',f:'active'},
+  {n:'id556677',s:'12 Trading accounts',pr:'$5.20',lo:'8.99',act:'Active',dt:'22.01.26',tr:'2%',tc:'trend-down',vtr:'3%',vtc:'trend-down',rs:'10% Auto weekly',rp:'Thu 09:00 AM, GMT-8',st:'Paused',sc:'tag-paused',f:'paused'},
+  {n:'Henrietta Crouse',s:'Copy trading account',pr:'$34.12',lo:'42.88',act:'Active',dt:'19.01.26',tr:'7%',tc:'trend-up',vtr:'9%',vtc:'trend-up',rs:'25% Manual',rp:'After confirmation',st:'Active rebate',sc:'tag-active',f:'active'},
+  {n:'Sebastian Mayfield',s:'3 Trading accounts',pr:'$0.00',lo:'0',act:'Inactive',dt:'16.01.26',tr:'0%',tc:'trend-flat',vtr:'0%',vtc:'trend-flat',rs:'0% Never set',rp:'No payout schedule',st:'Setup required',sc:'tag-setup',f:'setup',alert:1,alertFrom:'0.6 USD/lot',alertTo:'0.4 USD/lot',alertDate:'20.05.2026'},
+  {n:'id223344',s:'5 Trading accounts',pr:'$28.76',lo:'31.55',act:'Active',dt:'13.01.26',tr:'5%',tc:'trend-down',vtr:'7%',vtc:'trend-down',rs:'15% Auto weekly',rp:'Tue 11:00 AM, GMT-8',st:'Active rebate',sc:'tag-active',f:'active'},
+  {n:'Marguerite Eilers',s:'1 Trading account',pr:'$11.40',lo:'17.22',act:'Active',dt:'10.01.26',tr:'4%',tc:'trend-up',vtr:'2%',vtc:'trend-up',rs:'10% Manual',rp:'After confirmation',st:'Active rebate',sc:'tag-active',f:'active'},
+  {n:'id110099',s:'8 Trading accounts',pr:'$0.00',lo:'0',act:'Inactive',dt:'07.01.26',tr:'0%',tc:'trend-flat',vtr:'0%',vtc:'trend-flat',rs:'0% Never set',rp:'No payout schedule',st:'Setup required',sc:'tag-setup',f:'setup'},
+  {n:'Geraldine Pasche',s:'2 Trading accounts',pr:'$76.55',lo:'88.40',act:'Active',dt:'03.01.26',tr:'11%',tc:'trend-up',vtr:'13%',vtc:'trend-up',rs:'35% Auto weekly',rp:'Mon 08:00 AM, GMT-8',st:'Active rebate',sc:'tag-active',f:'active'},
+  {n:'Octavio Riggs',s:'Copy trading account',pr:'$3.99',lo:'7.10',act:'Active',dt:'29.12.25',tr:'2%',tc:'trend-down',vtr:'4%',vtc:'trend-down',rs:'5% Manual',rp:'After confirmation',st:'Active rebate',sc:'tag-active',f:'active'},
+  {n:'id665544',s:'4 Trading accounts',pr:'$19.20',lo:'25.66',act:'Active',dt:'24.12.25',tr:'6%',tc:'trend-up',vtr:'8%',vtc:'trend-up',rs:'20% Auto weekly',rp:'Fri 09:00 AM, GMT-8',st:'Setup required',sc:'tag-setup',f:'setup'},
+  {n:'TerryPassaquindici…',s:'Copy trading account',pr:'$3.33',lo:'$3.33',act:'Active',dt:'20.02.26/4 weeks',tr:'1%',tc:'trend-up',vtr:'2%',vtc:'trend-up',rs:'10% Manual',rp:'After confirmation',st:'Active rebate',sc:'tag-active',f:'active'}
+];
+function trendIcon(tc){return tc==='trend-up'?TREND_UP_GLYPH:tc==='trend-down'?TREND_DOWN_GLYPH:''}
+
+const COMPARE_PERIOD_SHORT='18.02 — 24.02';
+const COMPARE_INFO='Comparison with 18.02.2026 — 24.02.2026 (the 7 days preceding the period selected in Statistics).';
+function _num(s){return parseFloat(String(s).replace(/[$,\s]/g,''))||0}
+function calcPrev(currentStr,pctStr,tc){const cur=_num(currentStr);const pct=parseFloat(pctStr)/100||0;let prev;if(tc==='trend-up')prev=cur/(1+pct);else if(tc==='trend-down')prev=cur/(1-pct);else prev=cur;const isDollar=String(currentStr).includes('$');return(isDollar?'$':'')+prev.toFixed(2)}
+function calcDelta(currentStr,pctStr,tc){const cur=_num(currentStr);const pct=parseFloat(pctStr)/100||0;let prev;if(tc==='trend-up')prev=cur/(1+pct);else if(tc==='trend-down')prev=cur/(1-pct);else prev=cur;const diff=cur-prev;const isDollar=String(currentStr).includes('$');const sign=diff>0?'+':diff<-0.005?'−':'';return sign+(isDollar?'$':'')+Math.abs(diff).toFixed(2)}
+function trendDataAttrs(cur,pct,tc){const dir=tc==='trend-up'?'up':tc==='trend-down'?'down':'flat';return`data-current="${cur}" data-previous="${calcPrev(cur,pct,tc)}" data-delta="${calcDelta(cur,pct,tc)}" data-direction="${dir}"`}
+
+const tooltipEl=document.createElement('div');tooltipEl.className='tooltip';tooltipEl.setAttribute('role','tooltip');document.body.appendChild(tooltipEl);
+function positionTooltip(el){const r=el.getBoundingClientRect();tooltipEl.setAttribute('data-visible','true');tooltipEl.style.visibility='hidden';const tr=tooltipEl.getBoundingClientRect();let top=r.top-tr.height-8;let left=r.left+r.width/2-tr.width/2;if(top<8)top=r.bottom+8;if(left<8)left=8;if(left+tr.width>window.innerWidth-8)left=window.innerWidth-tr.width-8;tooltipEl.style.top=top+'px';tooltipEl.style.left=left+'px';tooltipEl.style.visibility=''}
+function showTrendTip(el){const cur=el.dataset.current,prev=el.dataset.previous,delta=el.dataset.delta,dir=el.dataset.direction;tooltipEl.innerHTML=`<div class="tip-row"><span class="tip-key">Current</span><span class="tip-val">${cur}</span></div><div class="tip-row"><span class="tip-key">Previous</span><span class="tip-val">${prev}</span></div><div class="tip-row"><span class="tip-key">Change</span><span class="tip-val tip-delta ${dir}">${delta||'0.00'}</span></div><div class="tip-caption">vs ${COMPARE_PERIOD_SHORT} (Previous 7d)</div>`;positionTooltip(el)}
+function showInfoTip(el){const text=el.dataset.info||COMPARE_INFO;tooltipEl.innerHTML=`<div class="tip-text">${text}</div>`;positionTooltip(el)}
+function showAlertTip(el){const from=el.dataset.alertFrom||'';const to=el.dataset.alertTo||'';const date=el.dataset.alertDate||'';tooltipEl.innerHTML=`<div class="tip-text" style="font-weight:600;margin-bottom:6px">Commission reduced</div>${from&&to?`<div class="tip-row"><span class="tip-key">Before</span><span class="tip-val">${from}</span></div><div class="tip-row"><span class="tip-key">Now</span><span class="tip-val tip-delta down">${to}</span></div>`:''}${date?`<div class="tip-caption">Changed on ${date}</div>`:''}<div class="tip-caption" style="margin-top:6px;padding-top:6px">Consider adjusting the rebate share to keep this client profitable.</div>`;positionTooltip(el)}
+function hideTip(){tooltipEl.removeAttribute('data-visible')}
+let _pinnedTipEl=null;
+function _showTipFor(el){if(el.matches('.trend'))showTrendTip(el);else if(el.matches('.th-info'))showInfoTip(el);else if(el.matches('.alert-badge'))showAlertTip(el);}
+document.addEventListener('mouseover',e=>{if(_pinnedTipEl)return;const t=e.target.closest&&e.target.closest('.trend');if(t&&t.dataset.current){showTrendTip(t);return}const i=e.target.closest&&e.target.closest('.th-info');if(i){showInfoTip(i);return}const a=e.target.closest&&e.target.closest('.alert-badge');if(a&&a.dataset.alertFrom!==undefined){showAlertTip(a);return}});
+document.addEventListener('mouseout',e=>{if(_pinnedTipEl)return;const t=e.target.closest&&e.target.closest('.trend');const i=e.target.closest&&e.target.closest('.th-info');const a=e.target.closest&&e.target.closest('.alert-badge');if(t||i||a)hideTip()});
+document.addEventListener('click',e=>{const target=e.target.closest&&(e.target.closest('.trend[data-current]')||e.target.closest('.th-info')||e.target.closest('.alert-badge[data-alert-from]'));if(target){e.stopPropagation();if(_pinnedTipEl===target){_pinnedTipEl=null;hideTip();}else{_pinnedTipEl=target;_showTipFor(target);}return;}if(_pinnedTipEl){_pinnedTipEl=null;hideTip();}},true);
+window.addEventListener('scroll',()=>{if(_pinnedTipEl)positionTooltip(_pinnedTipEl);},true);
+window.addEventListener('resize',()=>{if(_pinnedTipEl){_pinnedTipEl=null;hideTip();}});
+const MP=[
+  {n:'Gretchen Saris',s:'2 Trading accounts',pd:'$227.83',fr:'since 19.11.2021',ac:'$27.83',af:'Since last pay',rs:'50% Auto Daily',rp:'09:00 AM',np:'$13.91',nd:'17.02.2026',ps:'Auto scheduled',pc:'tag-auto'},
+  {n:'James Siphron',s:'Copy trading account',pd:'$107.45',fr:'since 05.03.2022',ac:'$107.45',af:'Since last pay',rs:'50% Auto Weekly',rp:'Thu 09:00 AM',np:'$53.72',nd:'19.02.2026',ps:'Auto scheduled',pc:'tag-auto'},
+  {n:'John Corry',s:'1 Trading account',pd:'$853.00',fr:'since 12.07.2023',ac:'$0.00',af:'Since last pay',rs:'50% Manual',rp:'After confirmation',np:'$0.00',nd:'After confirmation',ps:'Nothing to confirm',pc:'tag-nothing'},
+  {n:'TerryPassaquindici',s:'6 Trading accounts',pd:'$0.00',fr:'since 25.02.2026',ac:'$16.50',af:'Since start pays',rs:'70% Manual',rp:'After confirmation',np:'$11.55',nd:'After confirmation',ps:'Awaiting confirmation',pc:'tag-await'},
+  {n:'id7585585',s:'Copy trading account',pd:'$251.00',fr:'since 27.01.2024',ac:'$240.00',af:'Since paused',rs:'10% Manual',rp:'After confirmation',np:'$0.00',nd:'Не начисляется',ps:'Paused',pc:'tag-paused',alert:1,alertFrom:'0.8 USD/lot',alertTo:'0.5 USD/lot',alertDate:'26.05.2026'},
+  {n:'Rayna Botosh',s:'Trading account',pd:'$110.00',fr:'since 03.09.2020',ac:'$0.00',af:'Since last pay',rs:'50% Manual',rp:'After confirmation',np:'$0.00',nd:'No accrued profit',ps:'Nothing to confirm',pc:'tag-nothing'},
+  {n:'Marcus Webber',s:'3 Trading accounts',pd:'$432.10',fr:'since 14.05.2022',ac:'$54.20',af:'Since last pay',rs:'50% Auto Weekly',rp:'Mon 09:00 AM',np:'$27.10',nd:'23.02.2026',ps:'Auto scheduled',pc:'tag-auto',alert:1,alertFrom:'1.2 USD/lot',alertTo:'0.9 USD/lot',alertDate:'24.05.2026'},
+  {n:'Bernadette Lloyd',s:'2 Trading accounts',pd:'$1245.66',fr:'since 02.04.2021',ac:'$120.50',af:'Since last pay',rs:'30% Auto Weekly',rp:'Fri 12:00 PM',np:'$36.15',nd:'27.02.2026',ps:'Auto scheduled',pc:'tag-auto',alert:1,alertFrom:'1.0 USD/lot',alertTo:'0.7 USD/lot',alertDate:'22.05.2026'},
+  {n:'Priscilla Adkins',s:'Copy trading account',pd:'$48.20',fr:'since 18.09.2023',ac:'$24.30',af:'Since last pay',rs:'40% Manual',rp:'After confirmation',np:'$9.72',nd:'After confirmation',ps:'Awaiting confirmation',pc:'tag-await'},
+  {n:'id445221',s:'7 Trading accounts',pd:'$72.55',fr:'since 11.07.2022',ac:'$0.00',af:'Since last pay',rs:'50% Manual',rp:'After confirmation',np:'$0.00',nd:'No accrued profit',ps:'Nothing to confirm',pc:'tag-nothing'},
+  {n:'Henrietta Crouse',s:'Copy trading account',pd:'$320.40',fr:'since 22.10.2021',ac:'$66.75',af:'Since last pay',rs:'25% Auto Daily',rp:'10:00 AM',np:'$33.37',nd:'21.02.2026',ps:'Auto scheduled',pc:'tag-auto'},
+  {n:'Reginald Stoltz',s:'2 Trading accounts',pd:'$987.20',fr:'since 30.11.2020',ac:'$210.40',af:'Since last pay',rs:'40% Manual',rp:'After confirmation',np:'$84.16',nd:'After confirmation',ps:'Awaiting confirmation',pc:'tag-await'},
+  {n:'id556677',s:'12 Trading accounts',pd:'$155.00',fr:'since 08.03.2023',ac:'$144.20',af:'Since paused',rs:'10% Manual',rp:'After confirmation',np:'$0.00',nd:'Не начисляется',ps:'Paused',pc:'tag-paused',alert:1,alertFrom:'1.0 USD/lot',alertTo:'0.7 USD/lot',alertDate:'18.05.2026'},
+  {n:'Cornelius Ortega',s:'1 Trading account',pd:'$0.00',fr:'since 12.02.2026',ac:'$3.20',af:'Since start pays',rs:'5% Manual',rp:'After confirmation',np:'$0.16',nd:'After confirmation',ps:'Nothing to confirm',pc:'tag-nothing'},
+  {n:'Geraldine Pasche',s:'2 Trading accounts',pd:'$2103.55',fr:'since 17.06.2020',ac:'$184.30',af:'Since last pay',rs:'35% Auto Weekly',rp:'Mon 08:00 AM',np:'$64.50',nd:'24.02.2026',ps:'Auto scheduled',pc:'tag-auto'},
+  {n:'Theodora Mills',s:'4 Trading accounts',pd:'$0.00',fr:'since 29.01.2026',ac:'$0.00',af:'Since last pay',rs:'50% Manual',rp:'After confirmation',np:'$0.00',nd:'No accrued profit',ps:'Nothing to confirm',pc:'tag-nothing'},
+  {n:'Octavio Riggs',s:'Copy trading account',pd:'$45.10',fr:'since 04.08.2023',ac:'$9.40',af:'Since last pay',rs:'20% Manual',rp:'After confirmation',np:'$1.88',nd:'After confirmation',ps:'Awaiting confirmation',pc:'tag-await'}
+];
+
+let curF='all', sel=new Set(), searchQ='', searchQMP='';
+const SORT_STATE={main:{key:null,dir:null},mp:{key:null,dir:null}};
+const PIN_STATE={main:false,mp:false};
+
+function _alertCount(arr){return arr.reduce((n,d)=>n+(d.alert?1:0),0)}
+function _partitionAlert(arr){const a=[],r=[];for(const d of arr)(d.alert?a:r).push(d);return{a,r}}
+function _updatePinUI(kind,count){
+  const btn=document.getElementById('pin-badge-'+kind);
+  if(!btn)return;
+  if(count<=0){btn.hidden=true;btn.classList.remove('active');btn.setAttribute('aria-pressed','false');PIN_STATE[kind]=false;return;}
+  btn.hidden=false;
+  const cnt=btn.querySelector('.tpb-count');if(cnt)cnt.textContent=String(count);
+  if(PIN_STATE[kind]){btn.classList.add('active');btn.setAttribute('aria-pressed','true');btn.title='Pinned. Click to unpin.';}
+  else{btn.classList.remove('active');btn.setAttribute('aria-pressed','false');btn.title='Click to pin '+count+' '+(count===1?'client':'clients')+' with reduced commission to top';}
+}
+function togglePinAffected(kind){PIN_STATE[kind]=!PIN_STATE[kind];if(kind==='main')render();else renderMP();}
+function _alertBadgeHTML(d){
+  if(!d.alert)return'';
+  const from=d.alertFrom||'';
+  const to=d.alertTo||'';
+  const date=d.alertDate||'';
+  return`<span class="alert-badge" data-alert-from="${from}" data-alert-to="${to}" data-alert-date="${date}" data-alert-name="${d.n.replace(/"/g,'&quot;')}" tabindex="0" aria-label="Commission reduced. Hover for details"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 5v3.5M8 10.5v.7" stroke-linecap="round"/></svg></span>`;
+}
+const NUMERIC_KEYS=new Set(['pr','lo','pd','ac','np']);
+function _sortValue(d,k){const v=d[k];if(NUMERIC_KEYS.has(k))return _num(v);return String(v==null?'':v).toLowerCase()}
+function _sortCompare(a,b,key,dir){const va=_sortValue(a,key),vb=_sortValue(b,key);if(va<vb)return dir==='asc'?-1:1;if(va>vb)return dir==='asc'?1:-1;return 0}
+function _applySortVisual(kind){const s=SORT_STATE[kind];const selector=kind==='main'?'#tbl-main thead th.th-sortable':'#s-manage .tbl thead th.th-sortable';document.querySelectorAll(selector).forEach(th=>{if(th.dataset.sortKey===s.key&&s.dir){th.setAttribute('data-sort',s.dir);th.setAttribute('aria-sort',s.dir==='asc'?'ascending':'descending');}else{th.removeAttribute('data-sort');th.setAttribute('aria-sort','none');}});}
+document.querySelectorAll('th.th-sortable').forEach(th=>{th.setAttribute('tabindex','0');th.setAttribute('role','button');th.setAttribute('aria-sort','none');});
+function sortBy(kind,key){const s=SORT_STATE[kind];if(s.key===key){s.dir=s.dir==='asc'?'desc':s.dir==='desc'?null:'asc';if(s.dir===null)s.key=null;}else{s.key=key;s.dir='asc';}_applySortVisual(kind);if(kind==='main')render();else renderMP();}
+document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const th=e.target.closest&&e.target.closest('th.th-sortable');if(!th)return;e.preventDefault();const kind=th.closest('#tbl-main')?'main':'mp';sortBy(kind,th.dataset.sortKey);});
+
+function render(){
+  const q=searchQ.trim().toLowerCase();
+  const base=curF==='all'?DATA:DATA.filter(d=>d.f===curF);
+  let f=q?base.filter(d=>(d.n||'').toLowerCase().includes(q)||(d.s||'').toLowerCase().includes(q)):base.slice();
+  f=_applyPanelFilters(f,'main');
+  const ss=SORT_STATE.main;if(ss.key&&ss.dir)f=f.slice().sort((a,b)=>_sortCompare(a,b,ss.key,ss.dir));
+  const alertN=_alertCount(f);
+  _updatePinUI('main',alertN);
+  let pinDividerAt=-1;
+  if(PIN_STATE.main&&alertN>0){const{a,r}=_partitionAlert(f);f=a.concat(r);pinDividerAt=a.length;}
+  const tb=document.getElementById('tbody');
+  const tbl=document.getElementById('tbl-main');
+  const eb=document.getElementById('empty-box');
+  if(!f.length){tbl.style.display='none';eb.style.display='flex';
+    const cfg={
+      nothing:{t:'Hmm, nothing matches',d:'Try a different name or clear filters to see all clients.',btns:'<button class="btn-secondary" onclick="resetSearchAndFilters()">Clear all</button>'},
+      active:{t:'No clients with a configured active rebate',d:'You can set up the rebate payment with Manual or Automatic payment confirmation.',btns:'<button class="btn-primary" onclick="flt(document.querySelector(\'[data-f=setup]\'))">View clients need setup</button>'},
+      paused:{t:'No clients with a paused rebate',d:'You can suspend rebate payments when changing settings for clients with an active rebate.',btns:'<button class="btn-primary" onclick="flt(document.querySelector(\'[data-f=active]\'))">View active rebates</button>'},
+      setup:{t:'No clients need setup',d:'All your clients already have rebate settings. Manage active rebates or invite new clients.',btns:'<button class="btn-secondary" onclick="openModal(\'dlg-rebate\')">Go to referral links</button><button class="btn-primary" onclick="flt(document.querySelector(\'[data-f=active]\'))">View active rebates</button>'},
+      all:{t:'No clients yet',d:'Invite clients using your referral link.\nAfter they appear in this table, you\u2019ll be able to set up rebates.',btns:'<button class="btn-primary" onclick="openModal(\'dlg-rebate\')">Go to referral links</button>'}
+    };
+    const hasNarrowing=q||_countActiveFilters('main')>0;
+    const c=hasNarrowing?cfg.nothing:(cfg[curF]||cfg.all);
+    document.getElementById('e-title').textContent=c.t;document.getElementById('e-desc').textContent=c.d;document.getElementById('e-btns').innerHTML=c.btns;return;}
+  tbl.style.display='table';eb.style.display='none';
+  tb.innerHTML=f.map((d,i)=>{
+    const isSetup=d.f==='setup';
+    const isPaused=d.f==='paused';
+    const rowBtnClass=isSetup?'btn-sm-primary':'btn-sm-secondary';
+    const rowBtnLabel=isSetup?'Setup Rebate':isPaused?'Resume':'Edit settings';
+    /* Use the DATA index (not the filtered-array index) for selection state — so that selection survives filter/sort changes and selecting a row under one chip stays selected when the user switches chips. */
+    const di=DATA.indexOf(d);
+    const trCls=[sel.has(di)?'selected':'',d.alert?'row-affected':''].filter(Boolean).join(' ');
+    const dividerHTML=(PIN_STATE.main&&pinDividerAt>0&&i===pinDividerAt)?`<tr class="pinned-divider" aria-hidden="true"><td colspan="7"><span class="pd-label">All clients</span></td></tr>`:'';
+    return dividerHTML+`<tr class="${trCls}" onclick="togRow(${di})">
+    <td><div class="checkbox${sel.has(di)?' checked':''}" onclick="event.stopPropagation();togRow(${di})"></div></td>
+    <td><div class="client-name">${d.n}${_alertBadgeHTML(d)}</div><div class="client-sub">${d.s}</div></td>
+    <td>${d.pr}<div class="td-trend"><span class="trend ${d.tc}" ${trendDataAttrs(d.pr,d.tr,d.tc)}>${trendIcon(d.tc)}<span class="trend-num">${d.tr}</span></span></div></td>
+    <td>${d.lo}<div class="td-trend"><span class="trend ${d.vtc}" ${trendDataAttrs(d.lo,d.vtr,d.vtc)}>${trendIcon(d.vtc)}<span class="trend-num">${d.vtr}</span></span></div></td>
+    <td>${d.act}<div class="td-sub">${d.dt}</div></td>
+    <td>${d.rs}<div class="td-sub">${d.rp}</div></td>
+    <td><span class="status-default"><span class="tag ${d.sc}">${d.st}</span></span>
+    <div class="row-actions">
+      <button class="btn-sm ${rowBtnClass}" onclick="event.stopPropagation();openModal('dlg-rebate')">${rowBtnLabel}</button>
+      <div class="row-action-icons">
+        <button type="button" class="icon-btn-sm" aria-label="Client info" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><g transform="translate(2 2)"><path d="M9.10899 5.54601C9 5.75992 9 6.03995 9 6.6V7H9.4C9.96005 7 10.2401 7 10.454 6.89101C10.6422 6.79513 10.7951 6.64215 10.891 6.45399C11 6.24008 11 5.96005 11 5.4V5H10.6C10.0399 5 9.75992 5 9.54601 5.10899C9.35785 5.20487 9.20487 5.35785 9.10899 5.54601Z"/><path d="M11 13.4C11 13.9601 11 14.2401 10.891 14.454C10.7951 14.6422 10.6422 14.7951 10.454 14.891C10.2401 15 9.96005 15 9.4 15H9V11H8V10.6C8 10.0399 8 9.75992 8.10899 9.54601C8.20487 9.35785 8.35785 9.20487 8.54601 9.10899C8.66476 9.04849 8.83203 9.01172 9.05469 9.00391L11 9V13.4Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M20 10C20 15.5228 15.5228 20 10 20C4.47715 20 0 15.5228 0 10C0 4.47715 4.47715 0 10 0C15.5228 0 20 4.47715 20 10ZM18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z"/></g></svg></button>
+        <button type="button" class="icon-btn-sm" aria-label="Open statistics" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><g transform="translate(2 2)"><path d="M8.67572 10.9213V0H9.67572C10.228 0 10.6757 0.447715 10.6757 1V12.5859L10.6302 12.6314L8.67572 10.9213Z"/><path d="M6.67572 9.17129V4H4.67572V10.9768L6.66021 9.15771L6.67572 9.17129Z"/><path d="M2.67572 8V12.8102L0.67572 14.6435V9C0.67572 8.44772 1.12344 8 1.67572 8H2.67572Z"/><path d="M16.2615 10H13.6757C13.1234 10 12.6757 9.55228 12.6757 9V8H19.6757V15H18.6757C18.1234 15 17.6757 14.5523 17.6757 14V11.4142L10.7213 18.3686L6.69124 14.8423L1.35145 19.7371L0 18.2628L6.66021 12.1576L10.6302 15.6313L16.2615 10Z"/></g></svg></button>
+      </div>
+      <button type="button" class="icon-btn-sm row-action-more" aria-label="More actions" aria-haspopup="menu" aria-expanded="false" onclick="event.stopPropagation();toggleRowMenu(this)"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><g transform="translate(10 3)"><path d="M2 14C3.64699 14 4 14.353 4 16C4 17.647 3.64699 18 2 18C0.353006 18 0 17.647 0 16C8.51685e-09 14.353 0.353006 14 2 14Z"/><path d="M2 7C3.64699 7 4 7.35301 4 9C4 10.647 3.64699 11 2 11C0.353006 11 0 10.647 0 9C8.51685e-09 7.35301 0.353006 7 2 7Z"/><path d="M2 0C3.64699 0 4 0.353006 4 2C4 3.64699 3.64699 4 2 4C0.353006 4 0 3.64699 0 2C8.51685e-09 0.353006 0.353006 8.51714e-09 2 0Z"/></g></svg></button>
+      <div class="row-action-menu" role="menu" hidden>
+        <button type="button" class="ram-item" role="menuitem" onclick="event.stopPropagation();closeRowMenus()"><span class="ram-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><g transform="translate(2 2)"><path d="M9.10899 5.54601C9 5.75992 9 6.03995 9 6.6V7H9.4C9.96005 7 10.2401 7 10.454 6.89101C10.6422 6.79513 10.7951 6.64215 10.891 6.45399C11 6.24008 11 5.96005 11 5.4V5H10.6C10.0399 5 9.75992 5 9.54601 5.10899C9.35785 5.20487 9.20487 5.35785 9.10899 5.54601Z"/><path d="M11 13.4C11 13.9601 11 14.2401 10.891 14.454C10.7951 14.6422 10.6422 14.7951 10.454 14.891C10.2401 15 9.96005 15 9.4 15H9V11H8V10.6C8 10.0399 8 9.75992 8.10899 9.54601C8.20487 9.35785 8.35785 9.20487 8.54601 9.10899C8.66476 9.04849 8.83203 9.01172 9.05469 9.00391L11 9V13.4Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M20 10C20 15.5228 15.5228 20 10 20C4.47715 20 0 15.5228 0 10C0 4.47715 4.47715 0 10 0C15.5228 0 20 4.47715 20 10ZM18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z"/></g></svg></span>Client info</button>
+        <button type="button" class="ram-item" role="menuitem" onclick="event.stopPropagation();closeRowMenus()"><span class="ram-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><g transform="translate(2 2)"><path d="M8.67572 10.9213V0H9.67572C10.228 0 10.6757 0.447715 10.6757 1V12.5859L10.6302 12.6314L8.67572 10.9213Z"/><path d="M6.67572 9.17129V4H4.67572V10.9768L6.66021 9.15771L6.67572 9.17129Z"/><path d="M2.67572 8V12.8102L0.67572 14.6435V9C0.67572 8.44772 1.12344 8 1.67572 8H2.67572Z"/><path d="M16.2615 10H13.6757C13.1234 10 12.6757 9.55228 12.6757 9V8H19.6757V15H18.6757C18.1234 15 17.6757 14.5523 17.6757 14V11.4142L10.7213 18.3686L6.69124 14.8423L1.35145 19.7371L0 18.2628L6.66021 12.1576L10.6302 15.6313L16.2615 10Z"/></g></svg></span>Open statistics</button>
+      </div>
+    </div></td></tr>`}).join('');
+  const cbAll=document.getElementById('cb-all');
+  if(cbAll){cbAll.classList.remove('checked','indeterminate');if(f.length){if(sel.size===f.length)cbAll.classList.add('checked');else if(sel.size>0)cbAll.classList.add('indeterminate');}}
+}
+
+function renderMP(){
+  const q=searchQMP.trim().toLowerCase();
+  let data=q?MP.filter(d=>(d.n||'').toLowerCase().includes(q)||(d.s||'').toLowerCase().includes(q)):MP.slice();
+  data=_applyPanelFilters(data,'mp');
+  const sm=SORT_STATE.mp;if(sm.key&&sm.dir)data=data.slice().sort((a,b)=>_sortCompare(a,b,sm.key,sm.dir));
+  const alertNmp=_alertCount(data);
+  _updatePinUI('mp',alertNmp);
+  let pinDividerAtMP=-1;
+  if(PIN_STATE.mp&&alertNmp>0){const{a,r}=_partitionAlert(data);data=a.concat(r);pinDividerAtMP=a.length;}
+  const tblMp=document.querySelector('#s-manage .tbl');
+  const ebMp=document.getElementById('empty-box-mp');
+  if(!data.length){
+    if(tblMp)tblMp.style.display='none';
+    if(ebMp){ebMp.style.display='flex';
+      document.getElementById('e-title-mp').textContent='Hmm, nothing matches';
+      document.getElementById('e-desc-mp').textContent='Try a different name or clear filters to see all clients.';
+      document.getElementById('e-btns-mp').innerHTML='<button class="btn-secondary" onclick="resetSearchAndFiltersMP()">Clear all</button>';
+    }
+    return;
+  }
+  if(tblMp)tblMp.style.display='table';
+  if(ebMp)ebMp.style.display='none';
+  document.getElementById('tbody-mp').innerHTML=data.map((d,i)=>{
+    const trCls=d.alert?'row-affected':'';
+    const dividerHTML=(PIN_STATE.mp&&pinDividerAtMP>0&&i===pinDividerAtMP)?`<tr class="pinned-divider" aria-hidden="true"><td colspan="7"><span class="pd-label">All clients</span></td></tr>`:'';
+    return dividerHTML+`<tr class="${trCls}">
+    <td><div class="checkbox"></div></td>
+    <td><div class="client-name">${d.n}${_alertBadgeHTML(d)}</div><div class="client-sub">${d.s}</div></td>
+    <td>${d.pd}<div class="td-sub">${d.fr}</div></td>
+    <td>${d.ac}<div class="td-sub">${d.af}</div></td>
+    <td>${d.rs}<div class="td-sub">${d.rp}</div></td>
+    <td>${d.np}<div class="td-sub">${d.nd}</div></td>
+    <td><span class="tag ${d.pc}">${d.ps}</span></td>
+  </tr>`}).join('');
+}
+
+function openSearch(kind){
+  const wrap=document.getElementById('search-wrap-'+kind);
+  if(!wrap)return;
+  wrap.classList.add('is-open');
+  wrap.querySelector('.search-input').classList.add('open');
+  const inp=wrap.querySelector('input');
+  setTimeout(()=>inp.focus(),0);
+}
+function closeSearch(kind){
+  const wrap=document.getElementById('search-wrap-'+kind);
+  if(!wrap)return;
+  wrap.classList.remove('is-open');
+  wrap.querySelector('.search-input').classList.remove('open');
+  const inp=wrap.querySelector('input');
+  inp.value='';
+  if(kind==='main'){searchQ='';render();}else{searchQMP='';renderMP();}
+}
+function filterClients(q){searchQ=q;render();}
+function filterPayments(q){searchQMP=q;renderMP();}
+function resetSearchAndFilters(){
+  closeSearch('main');
+  const allChip=document.querySelector('[data-f=all]');
+  if(allChip&&curF!=='all')flt(allChip);
+  resetPanelFilters('main');
+}
+function resetSearchAndFiltersMP(){closeSearch('mp');resetPanelFilters('mp');}
+function toggleExportMenu(id, btn){
+  const m=document.getElementById(id);if(!m)return;
+  const willOpen=m.hidden;
+  closeAllExportMenus();
+  if(willOpen){m.hidden=false;btn.setAttribute('aria-expanded','true');}
+}
+function closeAllExportMenus(){
+  document.querySelectorAll('.dropdown-menu').forEach(m=>{m.hidden=true;});
+  document.querySelectorAll('.icon-btn-text-s[aria-haspopup="menu"]').forEach(b=>b.setAttribute('aria-expanded','false'));
+}
+function exportData(format,kind){closeAllExportMenus();console.log('export',format,kind);}
+document.addEventListener('click',e=>{if(!e.target.closest('.export-wrap'))closeAllExportMenus();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAllExportMenus();});
+/* ESC clears table selection if the user is not typing in an input/textarea and no other modal/popover handler is going to consume the event. Runs after other Escape handlers so it only fires when nothing else needs the key. */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  const t=e.target;
+  if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;
+  if(document.querySelector('.modal.show'))return;
+  if(document.querySelector('.filter-panel.open'))return;
+  if(document.querySelector('.dropdown-menu:not([hidden])'))return;
+  if(document.querySelector('.row-action-menu:not([hidden])'))return;
+  if(sel.size){clrSel();}
+});
+function flt(el){
+  curF=el.dataset.f;
+  document.querySelectorAll('#chips .chip').forEach(c=>{c.classList.toggle('active',c===el);c.setAttribute('aria-selected',c===el?'true':'false');});
+  updBB();render();
+}
+function togRow(i){sel.has(i)?sel.delete(i):sel.add(i);updBB();render();}
+function selAll(){
+  /* Select-all in the table header toggles selection of rows visible in the current chip filter only. Uses DATA indices to interop with sel (which is keyed by DATA index since multi-filter persistence). When all currently-visible rows are already selected, the toggle clears just that subset. */
+  const visible=[];
+  DATA.forEach((d,di)=>{if(curF==='all'||d.f===curF)visible.push(di);});
+  const allSel=visible.every(di=>sel.has(di));
+  if(allSel)visible.forEach(di=>sel.delete(di));
+  else visible.forEach(di=>sel.add(di));
+  updBB();render();
+}
+function clrSel(){sel.clear();updBB();render();}
+function updBB(){
+  const b=document.getElementById('bb');
+  /* Toggle a class on every .table-layout so CSS can shrink the layout by the bar's height — the bar then sits in the empty area below the card instead of floating over the last rows. We target .table-layout (not .table-card) because the existing rule `.table-layout .table-card{margin:0}` overrides any margin on the inner card. Shrinking the wrapping layout has the same visual effect (card has flex:1 1 auto and fills the layout). */
+  const setCardState=on=>document.querySelectorAll('.table-layout').forEach(c=>c.classList.toggle('has-bb',on));
+  if(!sel.size){b.classList.remove('show');setCardState(false);_updBBHidden(0);return;}
+  b.classList.add('show');
+  setCardState(true);
+  /* Count selected rows by status. Also count how many are currently filtered out (selected but not visible in the active chip view), so we can warn the user that part of their selection lives outside the current filter. */
+  const counts={setup:0,active:0,paused:0};
+  let hiddenByFilter=0;
+  sel.forEach(i=>{
+    const d=DATA[i];if(!d)return;
+    if(counts[d.f]!=null)counts[d.f]++;
+    if(curF!=='all'&&d.f!==curF)hiddenByFilter++;
+  });
+  document.getElementById('bb-txt').textContent=`Selected ${sel.size} row${sel.size>1?'s':''}`;
+  _updBBHidden(hiddenByFilter);
+  /* Render one action button per status that is present. Setup Rebate is primary unless there is only one action (then the single button is primary regardless of status). */
+  const labels={setup:'Setup Rebate',active:'Edit Rebate',paused:'Resume'};
+  const order=['setup','active','paused'];
+  const present=order.filter(k=>counts[k]>0);
+  const html=present.map(k=>{
+    const isPrimary=present.length===1||k==='setup';
+    const cls='bb-btn '+(isPrimary?'bb-btn-primary':'bb-btn-secondary');
+    return `<button type="button" class="${cls}" onclick="event.stopPropagation();openModal('dlg-rebate')">${labels[k]} (${counts[k]})</button>`;
+  }).join('');
+  document.getElementById('bb-actions').innerHTML=html;
+}
+function _updBBHidden(n){
+  const el=document.getElementById('bb-hidden');
+  if(!el)return;
+  if(n>0){el.textContent=`${n} hidden by filter`;el.hidden=false;}
+  else{el.textContent='';el.hidden=true;}
+}
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');if(id==='s-manage')renderMP();requestAnimationFrame(_refreshTableScrollState);}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function _closeOpenDatePanel(){
+  const dp=document.querySelector('.date-panel.open');
+  if(!dp)return;
+  const k=dp.id.replace('date-panel-','');
+  toggleDatePopover(k);
+}
+function _closeOpenFilterPanel(){
+  const fp=document.querySelector('.filter-panel.open:not(.date-panel)');
+  if(!fp)return;
+  const k=fp.id.replace('filter-panel-','');
+  toggleFilterPanel(k);
+}
+function toggleFilterPanel(kind){
+  const panel=document.getElementById('filter-panel-'+kind);
+  const btn=document.getElementById('filter-btn-'+kind);
+  const back=document.getElementById('filter-backdrop-'+kind);
+  if(!panel)return;
+  const willOpen=!panel.classList.contains('open');
+  if(willOpen)_closeOpenDatePanel();
+  panel.classList.toggle('open',willOpen);
+  if(btn){btn.classList.toggle('active',willOpen);btn.setAttribute('aria-expanded',String(willOpen));}
+  if(back)back.classList.toggle('open',willOpen);
+  requestAnimationFrame(_refreshTableScrollState);
+}
+
+function _checkTableScrollState(card){
+  if(!card)return;
+  card.classList.toggle('is-scrolled-x',card.scrollWidth>card.clientWidth+1);
+}
+function _refreshTableScrollState(){
+  document.querySelectorAll('.table-card').forEach(_checkTableScrollState);
+}
+window.addEventListener('resize',_refreshTableScrollState);
+document.addEventListener('DOMContentLoaded',()=>{
+  _refreshTableScrollState();
+  if(typeof ResizeObserver!=='undefined'){
+    const ro=new ResizeObserver(()=>_refreshTableScrollState());
+    document.querySelectorAll('.table-card').forEach(c=>ro.observe(c));
+  }
+});
+
+function _positionRowMenu(btn,menu){
+  const rect=btn.getBoundingClientRect();
+  menu.style.right='auto';menu.style.bottom='auto';menu.style.left='auto';menu.style.top='auto';
+  menu.hidden=false;
+  const menuRect=menu.getBoundingClientRect();
+  const menuW=menuRect.width||200;
+  const menuH=menuRect.height||100;
+  const margin=6;
+  let top=rect.bottom+margin;
+  if(top+menuH>window.innerHeight-8)top=Math.max(8,rect.top-menuH-margin);
+  let left=rect.right-menuW;
+  if(left<8)left=8;
+  menu.style.top=top+'px';
+  menu.style.left=left+'px';
+}
+function toggleRowMenu(btn){
+  const menu=btn.parentElement.querySelector('.row-action-menu')||btn._detachedMenu;
+  if(!menu)return;
+  const tr=btn.closest('tr');
+  const wasOpen=!menu.hidden;
+  closeRowMenus();
+  if(wasOpen)return;
+  if(tr)tr.classList.add('menu-open');
+  btn.setAttribute('aria-expanded','true');
+  if(menu.parentElement!==document.body){menu._origParent=menu.parentElement;document.body.appendChild(menu);}
+  btn._detachedMenu=menu;
+  menu._anchorBtn=btn;
+  _positionRowMenu(btn,menu);
+  const card=btn.closest('.table-card');
+  if(card){menu._scrollHandler=()=>closeRowMenus();card.addEventListener('scroll',menu._scrollHandler,{passive:true});}
+  menu._resizeHandler=()=>_positionRowMenu(btn,menu);
+  window.addEventListener('resize',menu._resizeHandler);
+}
+function closeRowMenus(){
+  document.querySelectorAll('.row-action-menu').forEach(m=>{
+    if(m._scrollHandler){const card=m._anchorBtn&&m._anchorBtn.closest('.table-card');if(card)card.removeEventListener('scroll',m._scrollHandler);m._scrollHandler=null;}
+    if(m._resizeHandler){window.removeEventListener('resize',m._resizeHandler);m._resizeHandler=null;}
+    if(m._origParent&&m.parentElement===document.body){m._origParent.appendChild(m);m._origParent=null;}
+    m.hidden=true;m.style.top=m.style.left='';
+  });
+  document.querySelectorAll('.row-action-more').forEach(b=>b.setAttribute('aria-expanded','false'));
+  document.querySelectorAll('tr.menu-open').forEach(t=>t.classList.remove('menu-open'));
+}
+document.addEventListener('click',(e)=>{
+  if(!e.target.closest('.row-action-menu')&&!e.target.closest('.row-action-more')){closeRowMenus();}
+});
+document.addEventListener('keydown',(e)=>{if(e.key==='Escape')closeRowMenus();});
+const PANEL_FILTERS={
+  main:{accountType:'all',activity:'all',rebatePct:'',rebateSetting:'all'},
+  mp:{accountType:'all',rebatePct:'',rebateSetting:'all'}
+};
+const _filterDebounce={main:null,mp:null};
+function _matchAccountType(d,v){if(v==='all')return true;const isCopy=(d.s||'').toLowerCase().includes('copy');return v==='copytrading'?isCopy:!isCopy;}
+function _matchActivity(d,v){if(v==='all')return true;return (d.act||'').toLowerCase()===v.toLowerCase();}
+function _matchRebatePct(d,v){if(!v)return true;const n=parseFloat(v);if(isNaN(n))return true;const m=/^(\d+(?:\.\d+)?)/.exec(d.rs||'');if(!m)return false;return parseFloat(m[1])===n;}
+function _matchRebateSetting(d,v){if(v==='all')return true;const rs=(d.rs||'').toLowerCase();if(v==='manual')return rs.includes('manual');if(v==='auto')return rs.includes('auto')&&!rs.includes('auto daily')&&!rs.includes('auto weekly')&&!rs.includes('auto monthly');return rs.includes(v);}
+function _applyPanelFilters(arr,kind){const f=PANEL_FILTERS[kind];return arr.filter(d=>_matchAccountType(d,f.accountType)&&(kind==='main'?_matchActivity(d,f.activity):true)&&_matchRebatePct(d,f.rebatePct)&&_matchRebateSetting(d,f.rebateSetting));}
+function _countActiveFilters(kind){const f=PANEL_FILTERS[kind];let c=0;if(f.accountType!=='all')c++;if(f.activity&&f.activity!=='all')c++;if(f.rebatePct)c++;if(f.rebateSetting!=='all')c++;return c;}
+function updateFilterFootprint(kind){
+  const arr=kind==='main'?DATA:MP;
+  const count=_applyPanelFilters(arr,kind).length;
+  const activeN=_countActiveFilters(kind);
+  const countEl=document.querySelector('#filter-panel-'+kind+' .fp-count');
+  if(countEl){const entity=kind==='main'?'clients':'payments';countEl.textContent=count+' '+entity;}
+  const fbtn=document.getElementById('filter-btn-'+kind);
+  if(fbtn){fbtn.classList.toggle('has-filters',activeN>0);let badge=fbtn.querySelector('.badge');if(activeN>0){if(!badge){badge=document.createElement('span');badge.className='badge';fbtn.appendChild(badge);}badge.textContent=activeN;badge.style.display='';}else if(badge){badge.style.display='none';}}
+}
+function onPanelChipClick(el){
+  const section=el.closest('.filter-panel-section');
+  const group=section.dataset.filterGroup;
+  const value=el.dataset.value;
+  const kind=el.closest('.filter-panel').dataset.kind;
+  section.querySelectorAll('.m-chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  PANEL_FILTERS[kind][group]=value;
+  if(kind==='main')render();else renderMP();
+  updateFilterFootprint(kind);
+}
+function onPanelInputInput(el){
+  const section=el.closest('.filter-panel-section');
+  const group=section.dataset.filterGroup;
+  const kind=el.closest('.filter-panel').dataset.kind;
+  PANEL_FILTERS[kind][group]=el.value.trim();
+  clearTimeout(_filterDebounce[kind]);
+  _filterDebounce[kind]=setTimeout(()=>{if(kind==='main')render();else renderMP();updateFilterFootprint(kind);},300);
+}
+function resetPanelFilters(kind){
+  const panel=document.getElementById('filter-panel-'+kind);if(!panel)return;
+  if(kind==='main')PANEL_FILTERS.main={accountType:'all',activity:'all',rebatePct:'',rebateSetting:'all'};
+  else PANEL_FILTERS.mp={accountType:'all',rebatePct:'',rebateSetting:'all'};
+  panel.querySelectorAll('.m-chips').forEach(g=>{g.querySelectorAll('.m-chip').forEach((c,i)=>c.classList.toggle('sel',i===0));});
+  panel.querySelectorAll('.m-input').forEach(i=>i.value='');
+  if(kind==='main')render();else renderMP();
+  updateFilterFootprint(kind);
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const dp=document.querySelector('.date-panel.open');if(dp){toggleDatePopover(dp.id.replace('date-panel-',''));return;}const p=document.querySelector('.filter-panel.open:not(.date-panel)');if(p){toggleFilterPanel(p.id.replace('filter-panel-',''));}}});
+function confirmRebate(){closeModal('dlg-rebate');const t=document.getElementById('toast-ok');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),5000);}
+function mchip(el){el.parentElement.querySelectorAll('.m-chip').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');}
+const DATE_TODAY=(function(){const n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate());})();
+function _dpDefaults(id){const s=_dpAddDays(DATE_TODAY,-6);return {start:_dpFmt(s),end:_dpFmt(DATE_TODAY),period:'7'};}
+const DATE_DEFAULTS={get main(){return _dpDefaults('main');}};
+function _dpFmt(d){const dd=String(d.getDate()).padStart(2,'0'),mm=String(d.getMonth()+1).padStart(2,'0');return `${dd}.${mm}.${d.getFullYear()}`}
+function _dpAddDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r}
+let _dpOpenId=null;
+function toggleDatePopover(id){
+  const panel=document.getElementById('date-panel-'+id);
+  const trig=document.getElementById('date-trigger-'+id);
+  const back=document.getElementById('date-backdrop-'+id);
+  if(!panel)return;
+  const willOpen=!panel.classList.contains('open');
+  if(willOpen)_closeOpenFilterPanel();
+  panel.classList.toggle('open',willOpen);
+  if(trig)trig.setAttribute('aria-expanded',String(willOpen));
+  if(back)back.classList.toggle('open',willOpen);
+  document.body.classList.toggle('dp-open',willOpen);
+  _dpOpenId=willOpen?id:null;
+  if(willOpen)requestAnimationFrame(()=>_dpScrollCalIntoView(id));
+  requestAnimationFrame(_refreshTableScrollState);
+}
+function closeDatePopover(id){const panel=document.getElementById('date-panel-'+id);if(!panel||!panel.classList.contains('open'))return;toggleDatePopover(id);}
+const _calMonth={};
+const _calMonthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function _calMonthName(d){return _calMonthNames[d.getMonth()]+' '+d.getFullYear();}
+function _dpSameDay(a,b){return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
+function _dpDayDiff(a,b){const ms=864e5;const s=new Date(a.getFullYear(),a.getMonth(),a.getDate());const e=new Date(b.getFullYear(),b.getMonth(),b.getDate());return Math.round((e-s)/ms)+1;}
+function _dpGetRange(id){return {sd:_dpParseDate(document.getElementById('date-start-'+id).value),ed:_dpParseDate(document.getElementById('date-end-'+id).value)};}
+function _dpInferPreset(sd,ed){
+  if(!sd||!ed||!_dpSameDay(ed,DATE_TODAY))return null;
+  if(_dpSameDay(sd,new Date(2024,0,1)))return 'all';
+  const diff=_dpDayDiff(sd,ed);
+  if(diff===1)return '1';if(diff===7)return '7';if(diff===14)return '14';if(diff===30)return '30';if(diff===90)return '90';
+  return null;
+}
+function _dpSync(id){
+  const {sd,ed}=_dpGetRange(id);
+  const trig=document.getElementById('date-trigger-'+id);
+  if(trig){const v=trig.querySelector('.dr-value');if(v&&sd&&ed&&sd<=ed)v.textContent=`${_dpFmt(sd)} — ${_dpFmt(ed)}`;}
+  const cnt=document.getElementById('date-count-'+id);
+  if(cnt){if(sd&&ed&&sd<=ed){const n=_dpDayDiff(sd,ed);cnt.textContent=n+' day'+(n===1?'':'s')+' selected';}else if(sd&&!ed){cnt.textContent='Pick end date…';}else{cnt.textContent='—';}}
+  const pan=document.getElementById('date-panel-'+id);
+  if(pan){const p=_dpInferPreset(sd,ed);pan.querySelectorAll('.m-chip[data-period]').forEach(c=>c.classList.toggle('sel',!!p&&c.dataset.period===p));}
+  calRender(id);
+}
+function calNav(id,dir){
+  if(!_calMonth[id])_calMonth[id]=new Date(DATE_TODAY.getFullYear(),DATE_TODAY.getMonth(),1);
+  _calMonth[id]=new Date(_calMonth[id].getFullYear(),_calMonth[id].getMonth()+dir,1);
+  calRender(id);
+}
+function _dpScrollCalIntoView(id){
+  const panel=document.getElementById('date-panel-'+id);
+  if(!panel||!panel.classList.contains('open'))return;
+  const scroll=panel.querySelector('.filter-panel-scroll');
+  if(!scroll)return;
+  const target=panel.querySelector('.cal-day.is-end')||panel.querySelector('.cal-day.is-start')||panel.querySelector('#cal-'+id);
+  if(!target)return;
+  const sr=scroll.getBoundingClientRect();
+  const tr=target.getBoundingClientRect();
+  const pad=16;
+  if(tr.bottom>sr.bottom-pad){scroll.scrollTop+=tr.bottom-sr.bottom+pad;}
+  else if(tr.top<sr.top+pad){scroll.scrollTop-=sr.top-tr.top+pad;}
+}
+function calRender(id){
+  const grid=document.getElementById('cal-grid-'+id);
+  const wd=document.getElementById('cal-wd-'+id);
+  const ttl=document.getElementById('cal-title-'+id);
+  const next=document.getElementById('cal-next-'+id);
+  if(!grid)return;
+  if(!_calMonth[id]){const {sd}=_dpGetRange(id);const base=sd||DATE_TODAY;_calMonth[id]=new Date(base.getFullYear(),base.getMonth(),1);}
+  const m=_calMonth[id];
+  if(ttl)ttl.textContent=_calMonthName(m);
+  if(wd&&!wd.dataset.ready){wd.innerHTML=['Mo','Tu','We','Th','Fr','Sa','Su'].map(w=>`<div class="cal-wd">${w}</div>`).join('');wd.dataset.ready='1';}
+  const {sd,ed}=_dpGetRange(id);
+  const first=new Date(m.getFullYear(),m.getMonth(),1);
+  const dow=(first.getDay()+6)%7;
+  const start=_dpAddDays(first,-dow);
+  let html='';
+  for(let i=0;i<42;i++){
+    const d=_dpAddDays(start,i);
+    const out=d.getMonth()!==m.getMonth();
+    const today=_dpSameDay(d,DATE_TODAY);
+    const isStart=sd&&_dpSameDay(d,sd);
+    const isEnd=ed&&_dpSameDay(d,ed);
+    const inRange=sd&&ed&&d>sd&&d<ed;
+    const future=d>DATE_TODAY;
+    const cellCls=['cal-cell'];
+    if(inRange)cellCls.push('in-range');
+    if(isStart&&ed&&!_dpSameDay(sd,ed))cellCls.push('is-start');
+    if(isEnd&&sd&&!_dpSameDay(sd,ed))cellCls.push('is-end');
+    const dayCls=['cal-day'];
+    if(out)dayCls.push('out');
+    if(today)dayCls.push('today');
+    if(isStart)dayCls.push('is-start');
+    if(isEnd)dayCls.push('is-end');
+    html+=`<div class="${cellCls.join(' ')}"><button type="button" class="${dayCls.join(' ')}" ${future?'disabled':''} onclick="calDayClick('${id}',${d.getFullYear()},${d.getMonth()},${d.getDate()})">${d.getDate()}</button></div>`;
+  }
+  grid.innerHTML=html;
+  if(next){const limit=new Date(DATE_TODAY.getFullYear(),DATE_TODAY.getMonth(),1);next.disabled=(m.getFullYear()===limit.getFullYear()&&m.getMonth()===limit.getMonth());}
+}
+function calDayClick(id,y,mo,da){
+  const d=new Date(y,mo,da);
+  if(d>DATE_TODAY)return;
+  const {sd,ed}=_dpGetRange(id);
+  let nsd,ned;
+  if(sd&&ed){nsd=d;ned=null;}
+  else if(sd&&!ed){if(d<sd){nsd=d;ned=sd;}else{nsd=sd;ned=d;}}
+  else{nsd=d;ned=null;}
+  document.getElementById('date-start-'+id).value=nsd?_dpFmt(nsd):'';
+  document.getElementById('date-end-'+id).value=ned?_dpFmt(ned):'';
+  if(d.getMonth()!==(_calMonth[id]?_calMonth[id].getMonth():d.getMonth())||d.getFullYear()!==(_calMonth[id]?_calMonth[id].getFullYear():d.getFullYear())){_calMonth[id]=new Date(d.getFullYear(),d.getMonth(),1);}
+  _dpValidateAll(id,false);
+  _dpSync(id);
+}
+function datePreset(el,id){
+  const p=el.dataset.period;
+  let start;
+  if(p==='all')start=new Date(2024,0,1);
+  else start=_dpAddDays(DATE_TODAY,-(parseInt(p,10)-1));
+  document.getElementById('date-start-'+id).value=_dpFmt(start);
+  document.getElementById('date-end-'+id).value=_dpFmt(DATE_TODAY);
+  _calMonth[id]=new Date(DATE_TODAY.getFullYear(),DATE_TODAY.getMonth(),1);
+  _dpValidateAll(id,false);
+  _dpSync(id);
+  requestAnimationFrame(()=>_dpScrollCalIntoView(id));
+}
+function dateReset(id){
+  const def=DATE_DEFAULTS[id]||DATE_DEFAULTS.main;
+  document.getElementById('date-start-'+id).value=def.start;
+  document.getElementById('date-end-'+id).value=def.end;
+  _calMonth[id]=new Date(DATE_TODAY.getFullYear(),DATE_TODAY.getMonth(),1);
+  _dpValidateAll(id,false);
+  _dpSync(id);
+  requestAnimationFrame(()=>_dpScrollCalIntoView(id));
+}
+function _dpFormatInput(v){const d=v.replace(/\D/g,'').slice(0,8);if(d.length>4)return d.slice(0,2)+'.'+d.slice(2,4)+'.'+d.slice(4);if(d.length>2)return d.slice(0,2)+'.'+d.slice(2);return d;}
+function _dpParseDate(s){const m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(s);if(!m)return null;const dd=+m[1],mm=+m[2],yy=+m[3];if(mm<1||mm>12||dd<1||dd>31||yy<1900||yy>2100)return null;const d=new Date(yy,mm-1,dd);if(d.getFullYear()!==yy||d.getMonth()!==mm-1||d.getDate()!==dd)return null;return d;}
+function _dpSetFieldState(id,kind,err){const f=document.getElementById('date-field-'+kind+'-'+id);const i=document.getElementById('date-'+kind+'-'+id);const e=document.getElementById('date-error-'+kind+'-'+id);if(!f||!i||!e)return;if(err){f.classList.add('has-error');i.classList.add('invalid');i.setAttribute('aria-invalid','true');e.textContent=err;}else{f.classList.remove('has-error');i.classList.remove('invalid');i.removeAttribute('aria-invalid');e.textContent='';}}
+function _dpFieldError(id,kind,strict){const i=document.getElementById('date-'+kind+'-'+id);const v=i.value;if(!v)return strict?'Required':null;if(v.length<10)return strict?'Use DD.MM.YYYY':null;return _dpParseDate(v)?null:'Invalid date';}
+function _dpValidateAll(id,strict){const sErr=_dpFieldError(id,'start',strict);const eErr=_dpFieldError(id,'end',strict);let crossErr=null;if(!sErr&&!eErr){const sd=_dpParseDate(document.getElementById('date-start-'+id).value);const ed=_dpParseDate(document.getElementById('date-end-'+id).value);if(sd&&ed&&sd>ed)crossErr='Start is after end';}_dpSetFieldState(id,'start',sErr||crossErr||'');_dpSetFieldState(id,'end',eErr||'');const btn=document.getElementById('date-apply-'+id);if(btn)btn.disabled=!!(sErr||eErr||crossErr);}
+function onDateInput(el,id,kind){const cur=el.selectionStart||0;const before=el.value;const after=_dpFormatInput(before);if(before!==after){el.value=after;const diff=after.length-before.length;const pos=Math.max(0,Math.min(after.length,cur+diff));el.setSelectionRange(pos,pos);}_dpValidateAll(id,false);_dpSync(id);}
+function onDateBlur(el,id,kind){_dpValidateAll(id,true);_dpSync(id);}
+document.querySelectorAll('.day-btn').forEach(b=>b.onclick=function(){document.querySelectorAll('.day-btn').forEach(x=>x.classList.remove('on'));this.classList.add('on');});
+document.querySelectorAll('.pm-toggle span').forEach(s=>s.onclick=function(){this.parentElement.querySelectorAll('span').forEach(x=>x.classList.remove('on'));this.classList.add('on');});
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+render();
+updateFilterFootprint('main');
+updateFilterFootprint('mp');
+dateReset('main');
+_refreshTableScrollState();
+(function(){
+  const h=location.hash.slice(1);
+  if(h==='filters')toggleFilterPanel('main');
+  if(h==='date')toggleDatePopover('main');
+  if(h==='rebate')openModal('dlg-rebate');
+  if(h==='manage')go('s-manage');
+  if(h==='setup')flt(document.querySelector('[data-f=setup]'));
+  if(h==='active')flt(document.querySelector('[data-f=active]'));
+  if(h==='paused')flt(document.querySelector('[data-f=paused]'));
+  if(h==='select-all'){DATA.forEach((_,i)=>sel.add(i));updBB();render();}
+  if(h==='select-mixed'){[0,2,4].forEach(i=>sel.add(i));updBB();render();}
+  if(h==='select-setup'){DATA.forEach((d,i)=>{if(d.f==='setup')sel.add(i);});updBB();render();}
+})();
+</script>
+</body>
+</html>

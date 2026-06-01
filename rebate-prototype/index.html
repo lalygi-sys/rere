@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Rebate — Prototype</title>
+<style>
+:root {
+  --bg: #FFFFFF;
+  --bg-secondary: #F5F5F5;
+  --bg-overlay: rgba(0,0,0,0.4);
+  --text-primary: #1A1A1A;
+  --text-secondary: #6B7280;
+  --text-tertiary: #9CA3AF;
+  --border: #E5E7EB;
+  --blue: #2563EB;
+  --blue-light: #EFF6FF;
+  --green: #10B981;
+  --green-light: #ECFDF5;
+  --orange: #F59E0B;
+  --orange-light: #FFFBEB;
+  --red: #EF4444;
+  --red-light: #FEF2F2;
+  --purple: #8B5CF6;
+  --purple-light: #F5F3FF;
+  --gray-tag: #F3F4F6;
+  --radius: 8px;
+  --radius-lg: 16px;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font);
+  background: #E5E7EB;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 16px 0;
+}
+
+.phone-frame {
+  width: 360px;
+  height: 800px;
+  background: var(--bg);
+  border-radius: 40px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+}
+
+.screen {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0; left: 0;
+  background: var(--bg);
+}
+.screen.active { display: flex; }
+
+/* Status Bar */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.status-bar .time { font-weight: 700; }
+.status-bar .icons { display: flex; gap: 6px; align-items: center; }
+.status-bar .icons span { font-size: 12px; }
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  height: 56px;
+  flex-shrink: 0;
+}
+.header .back-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border: none; background: none;
+  font-size: 20px; color: var(--text-primary);
+}
+.header .title {
+  font-size: 18px;
+  font-weight: 600;
+  flex: 1;
+  text-align: center;
+  margin-right: 32px;
+}
+.header.with-back .title { margin-right: 0; }
+.header .action-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border: none; background: none;
+  font-size: 18px; color: var(--text-secondary);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+.tab {
+  padding: 10px 0;
+  margin-right: 24px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tab.active {
+  color: var(--blue);
+  border-bottom-color: var(--blue);
+  font-weight: 600;
+}
+
+/* Chips */
+.chips-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.chips-row::-webkit-scrollbar { display: none; }
+.chip {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.chip.active {
+  background: var(--blue);
+  color: white;
+  border-color: var(--blue);
+}
+.chip.filter {
+  display: flex; align-items: center; gap: 4px;
+}
+.chip.filter::after {
+  content: '▾';
+  font-size: 10px;
+}
+
+/* Client list */
+.client-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px;
+}
+.list-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 0 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
+}
+.list-header .col-name { flex: 1; display: flex; align-items: center; gap: 8px; }
+.list-header .col-status { width: 100px; text-align: right; }
+
+.client-card {
+  display: flex;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.client-card:active { background: var(--bg-secondary); }
+.client-checkbox {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  margin-right: 12px;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  color: white;
+}
+.client-checkbox.checked {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+.client-info { flex: 1; min-width: 0; }
+.client-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.client-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.client-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Tags */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tag.active { background: var(--green-light); color: #059669; }
+.tag.paused { background: var(--orange-light); color: #D97706; }
+.tag.pending { background: var(--blue-light); color: var(--blue); }
+.tag.unsubscribed { background: var(--red-light); color: var(--red); }
+.tag.new { background: var(--purple-light); color: var(--purple); }
+.tag.setup { background: var(--gray-tag); color: var(--text-secondary); }
+
+.expand-icon {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 16px;
+}
+
+/* Tab bar */
+.tab-bar {
+  display: flex;
+  border-top: 1px solid var(--border);
+  padding: 8px 0;
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.tab-bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 4px 0;
+}
+.tab-bar-item .icon { font-size: 20px; }
+.tab-bar-item .label { font-size: 10px; color: var(--text-tertiary); font-weight: 500; }
+.tab-bar-item.active .icon { color: var(--blue); }
+.tab-bar-item.active .label { color: var(--blue); }
+
+/* Client detail screen */
+.detail-section {
+  padding: 16px;
+}
+.detail-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--blue-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 600; color: var(--blue);
+  margin-bottom: 12px;
+}
+.detail-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.detail-id {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.info-label { font-size: 14px; color: var(--text-secondary); }
+.info-value { font-size: 14px; color: var(--text-primary); font-weight: 500; }
+
+/* Action buttons */
+.action-group {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+}
+.btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-align: center;
+}
+.btn-primary {
+  background: var(--blue);
+  color: white;
+}
+.btn-secondary {
+  background: var(--bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.btn-danger {
+  background: var(--red-light);
+  color: var(--red);
+}
+.btn-full {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+/* Bottom sheet */
+.bottom-sheet-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg-overlay);
+  display: none;
+  z-index: 10;
+}
+.bottom-sheet-overlay.active { display: block; }
+.bottom-sheet {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--bg);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 0;
+  max-height: 90%;
+  display: flex;
+  flex-direction: column;
+  z-index: 11;
+}
+.bottom-sheet .handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 12px auto;
+  flex-shrink: 0;
+}
+.bottom-sheet .sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 12px;
+  flex-shrink: 0;
+}
+.bottom-sheet .sheet-title {
+  font-size: 16px; font-weight: 600;
+}
+.bottom-sheet .sheet-close {
+  cursor: pointer; border: none; background: none;
+  font-size: 20px; color: var(--text-secondary);
+}
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px 16px;
+}
+.sheet-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Form elements */
+.form-group {
+  margin-bottom: 20px;
+}
+.form-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  display: block;
+}
+.form-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: var(--font);
+  color: var(--text-primary);
+  background: var(--bg);
+  outline: none;
+}
+.form-input:focus { border-color: var(--blue); }
+.form-input::placeholder { color: var(--text-tertiary); }
+
+.form-select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: var(--font);
+  color: var(--text-primary);
+  background: var(--bg);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236B7280' viewBox='0 0 16 16'%3E%3Cpath d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.chips-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Confirmation modal */
+.confirm-modal {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  width: 300px;
+  z-index: 12;
+  text-align: center;
+  display: none;
+}
+.confirm-modal.active { display: block; }
+.confirm-icon {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 24px;
+}
+.confirm-icon.warning { background: var(--orange-light); }
+.confirm-icon.success { background: var(--green-light); }
+.confirm-icon.error { background: var(--red-light); }
+.confirm-title {
+  font-size: 16px; font-weight: 600; margin-bottom: 8px;
+}
+.confirm-text {
+  font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;
+  line-height: 1.4;
+}
+.confirm-actions { display: flex; gap: 8px; }
+
+/* Search bar */
+.search-bar {
+  padding: 8px 16px;
+  flex-shrink: 0;
+}
+.search-input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  gap: 8px;
+}
+.search-input-wrap .icon { color: var(--text-tertiary); font-size: 16px; }
+.search-input-wrap input {
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-family: var(--font);
+  outline: none;
+  flex: 1;
+  color: var(--text-primary);
+}
+
+/* Summary card */
+.summary-card {
+  margin: 12px 16px;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+}
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.summary-row:last-child { margin-bottom: 0; }
+.summary-label { font-size: 13px; color: var(--text-secondary); }
+.summary-value { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+
+/* Divider */
+.divider {
+  height: 8px;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+/* Success screen */
+.success-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 40px;
+  text-align: center;
+}
+.success-icon {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: var(--green-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  margin-bottom: 24px;
+}
+.success-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+.success-text { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+
+/* Toggle */
+.toggle {
+  width: 44px; height: 24px;
+  border-radius: 12px;
+  background: var(--border);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+}
+.toggle.on { background: var(--blue); }
+.toggle::after {
+  content: '';
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 2px; left: 2px;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.toggle.on::after { transform: translateX(20px); }
+
+/* Section with title */
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 16px 16px 8px;
+}
+
+/* Screen transitions */
+.screen { transition: opacity 0.15s ease; }
+
+/* Selection bar */
+.selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--blue-light);
+  flex-shrink: 0;
+}
+.selection-bar .count { font-size: 13px; color: var(--blue); font-weight: 600; }
+.selection-bar .actions { display: flex; gap: 8px; }
+.selection-bar .actions button {
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: var(--blue);
+  color: white;
+}
+
+/* Scrollable content */
+.scrollable {
+  flex: 1;
+  overflow-y: auto;
+}
+</style>
+</head>
+<body>
+
+<div class="phone-frame" id="app">
+
+  <!-- ==================== SCREEN: Auto Rebate List ==================== -->
+  <div class="screen active" id="screen-list">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="icons"><span>📶</span><span>📡</span><span>🔋</span></div>
+    </div>
+
+    <div class="header">
+      <div class="title" style="text-align:left; margin:0; font-size:20px;">Auto Rebate</div>
+      <button class="action-btn" onclick="openFilter()">⚙</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="all">All</div>
+      <div class="tab" data-tab="subscribed">Subscribed</div>
+      <div class="tab" data-tab="unsubscribed">Unsubscribed</div>
+    </div>
+
+    <div class="chips-row" id="filter-chips">
+      <div class="chip active">All</div>
+      <div class="chip">Active rebates</div>
+      <div class="chip">Pending setup</div>
+      <div class="chip">Paused</div>
+    </div>
+
+    <div id="selection-bar" class="selection-bar" style="display:none;">
+      <span class="count"><span id="selected-count">0</span> selected</span>
+      <div class="actions">
+        <button onclick="showBulkAction('pause')">Pause</button>
+        <button onclick="showBulkAction('pay')">Pay rebate</button>
+      </div>
+    </div>
+
+    <div class="client-list" id="client-list">
+      <div class="list-header">
+        <div class="col-name">
+          <div class="client-checkbox" id="select-all" onclick="toggleSelectAll()"></div>
+          <span>Name</span>
+        </div>
+        <div class="col-status">Status</div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-bar-item active"><span class="icon">📊</span><span class="label">Rebate</span></button>
+      <button class="tab-bar-item"><span class="icon">👥</span><span class="label">Clients</span></button>
+      <button class="tab-bar-item"><span class="icon">💰</span><span class="label">Payments</span></button>
+      <button class="tab-bar-item"><span class="icon">⚙️</span><span class="label">Settings</span></button>
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN: Client Card ==================== -->
+  <div class="screen" id="screen-client">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="icons"><span>📶</span><span>📡</span><span>🔋</span></div>
+    </div>
+
+    <div class="header with-back">
+      <button class="back-btn" onclick="goBack()">←</button>
+      <div class="title">Client</div>
+      <button class="action-btn" onclick="openClientMenu()">⋮</button>
+    </div>
+
+    <div class="scrollable" id="client-detail-content"></div>
+
+    <div class="action-group" id="client-actions"></div>
+  </div>
+
+  <!-- ==================== SCREEN: Edit Rebate ==================== -->
+  <div class="screen" id="screen-edit">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="icons"><span>📶</span><span>📡</span><span>🔋</span></div>
+    </div>
+
+    <div class="header with-back">
+      <button class="back-btn" onclick="goBack()">←</button>
+      <div class="title">Edit Rebate</div>
+      <div style="width:32px"></div>
+    </div>
+
+    <div class="scrollable">
+      <div style="padding:16px;">
+        <div class="form-group">
+          <label class="form-label">Rebate type</label>
+          <div class="chips-select">
+            <div class="chip active">Percentage</div>
+            <div class="chip">Fixed amount</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rebate value</label>
+          <input class="form-input" type="text" value="15%" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Frequency</label>
+          <select class="form-select">
+            <option>Monthly</option>
+            <option>Quarterly</option>
+            <option>Annually</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Start date</label>
+          <input class="form-input" type="text" value="01/01/2026" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">End date</label>
+          <input class="form-input" type="text" value="12/31/2026" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <input class="form-input" type="text" placeholder="Add notes..." />
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:16px;">
+      <button class="btn btn-primary btn-full" onclick="saveEdit()">Save changes</button>
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN: Pause Rebate ==================== -->
+  <div class="screen" id="screen-pause">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="icons"><span>📶</span><span>📡</span><span>🔋</span></div>
+    </div>
+
+    <div class="header with-back">
+      <button class="back-btn" onclick="goBack()">←</button>
+      <div class="title">Pause Rebate</div>
+      <div style="width:32px"></div>
+    </div>
+
+    <div class="scrollable">
+      <div style="padding:16px;">
+        <div class="confirm-icon warning" style="margin:24px auto;">⏸</div>
+        <h3 style="text-align:center; margin-bottom:8px;" id="pause-client-name">Pause rebate?</h3>
+        <p style="text-align:center; color:var(--text-secondary); font-size:14px; line-height:1.5; margin-bottom:24px;">
+          Pausing will stop all rebate calculations for this client. You can resume at any time.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Reason for pausing</label>
+          <select class="form-select">
+            <option>Select reason...</option>
+            <option>Client request</option>
+            <option>Under review</option>
+            <option>Payment issue</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Additional notes</label>
+          <input class="form-input" type="text" placeholder="Optional..." />
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:16px; display:flex; gap:8px;">
+      <button class="btn btn-secondary" style="flex:1" onclick="goBack()">Cancel</button>
+      <button class="btn btn-danger" style="flex:1; background:var(--orange); color:white;" onclick="confirmPause()">Pause rebate</button>
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN: Resume Rebate ==================== -->
+  <div class="screen" id="screen-resume">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="icons"><span>📶</span><span>📡</span><span>🔋</span></div>
+    </div>
+
+    <div class="header with-back">
+      <button class="back-btn" onclick="goBack()">←</button>
+      <div class="title">Resume Rebate</div>
+      <div style="width:32px"></div>
+    </div>
+
+    <div class="scrollable">
+      <div style="padding:16px;">
+        <div class="confirm-icon success" style="margin:24px auto;">▶</div>
+        <h3 style="text-align:center; margin-bottom:8px;" id="resume-client-name">Resume rebate?</h3>
+        <p style="text-align:center; color:var(--text-secondary); font-size:14px; line-height:1.5; margin-bottom:24px;">
+          This will resume all rebate calculations from the current period.
+        </p>
+
+        <div class="summary-card">
+          <div class="summary-row">
+            <span class="summary-label">Rebate type</span>
+            <span class="summary-value">Percentage — 15%</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Frequency</span>
+            <span class="summary-value">Monthly</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Paused since</span>
+            <span class="summary-value">Feb 15, 2026</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:16px; display:flex; gap:8px;">
+      <button class="btn btn-secondary" style="flex:1" onclick="goBack()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="confirmResume()">Resume</button>
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN: Pay Rebate ==================== -->
+  <div class="screen" id="screen-pay">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="icons"><span>📶</span><span>📡</span><span>🔋</span></div>
+    </div>
+
+    <div class="header with-back">
+      <button class="back-btn" onclick="goBack()">←</button>
+      <div class="title">Pay Rebate</div>
+      <div style="width:32px"></div>
+    </div>
+
+    <div class="scrollable">
+      <div style="padding:16px;">
+        <div class="summary-card">
+          <div class="summary-row">
+            <span class="summary-label">Client</span>
+            <span class="summary-value" id="pay-client-name">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Period</span>
+            <span class="summary-value">Mar 2026</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Calculated rebate</span>
+            <span class="summary-value" style="color:var(--green)">$1,250.00</span>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:20px;">
+          <label class="form-label">Amount to pay</label>
+          <input class="form-input" type="text" value="$1,250.00" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment method</label>
+          <select class="form-select">
+            <option>Bank transfer</option>
+            <option>Wallet credit</option>
+            <option>Check</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <input class="form-input" type="text" placeholder="Payment reference..." />
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:16px;">
+      <button class="btn btn-primary btn-full" onclick="confirmPay()">Confirm payment</button>
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN: Client Settings ==================== -->
+  <div class="screen" id="screen-settings">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="icons"><span>📶</span><span>📡</span><span>🔋</span></div>
+    </div>
+
+    <div class="header with-back">
+      <button class="back-btn" onclick="goBack()">←</button>
+      <div class="title">Client Settings</div>
+      <div style="width:32px"></div>
+    </div>
+
+    <div class="scrollable" id="settings-content">
+      <div class="section-title">Rebate Settings</div>
+      <div style="padding:0 16px;">
+        <div class="info-row">
+          <span class="info-label">Auto rebate</span>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Rebate type</span>
+          <span class="info-value">Percentage</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Rate</span>
+          <span class="info-value">15%</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Frequency</span>
+          <span class="info-value">Monthly</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Auto payout</span>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <div class="section-title">Payment Settings</div>
+      <div style="padding:0 16px;">
+        <div class="info-row">
+          <span class="info-label">Default method</span>
+          <span class="info-value">Bank transfer</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Account</span>
+          <span class="info-value">****4521</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Min. payout</span>
+          <span class="info-value">$100.00</span>
+        </div>
+      </div>
+
+      <div class="section-title">Notifications</div>
+      <div style="padding:0 16px;">
+        <div class="info-row">
+          <span class="info-label">Email notifications</span>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="info-row" style="border:none">
+          <span class="info-label">SMS notifications</span>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:16px;">
+      <button class="btn btn-primary btn-full" onclick="navigate('screen-edit')">Edit settings</button>
+    </div>
+  </div>
+
+  <!-- ==================== SCREEN: Manage Payments ==================== -->
+  <div class="screen" id="screen-payments">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="icons"><span>📶</span><span>📡</span><span>🔋</span></div>
+    </div>
+
+    <div class="header with-back">
+      <button class="back-btn" onclick="goBack()">←</button>
+      <div class="title">Payments</div>
+      <div style="width:32px"></div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active">All</div>
+      <div class="tab">Pending</div>
+      <div class="tab">Completed</div>
+    </div>
+
+    <div class="scrollable" id="payments-list"></div>
+  </div>
+
+  <!-- ==================== SCREEN: Success ==================== -->
+  <div class="screen" id="screen-success">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="icons"><span>📶</span><span>📡</span><span>🔋</span></div>
+    </div>
+
+    <div class="success-screen">
+      <div class="success-icon">✓</div>
+      <div class="success-title" id="success-title">Done!</div>
+      <div class="success-text" id="success-text"></div>
+    </div>
+
+    <div style="padding:16px;">
+      <button class="btn btn-primary btn-full" onclick="navigate('screen-list')">Back to list</button>
+    </div>
+  </div>
+
+  <!-- ==================== FILTER BOTTOM SHEET ==================== -->
+  <div class="bottom-sheet-overlay" id="filter-overlay" onclick="closeFilter()"></div>
+  <div class="bottom-sheet" id="filter-sheet" style="display:none;">
+    <div class="handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title">Filters</span>
+      <button class="sheet-close" onclick="closeFilter()">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <div class="chips-select">
+          <div class="chip active">All</div>
+          <div class="chip">Percentage</div>
+          <div class="chip">Fixed</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <div class="chips-select">
+          <div class="chip active">All</div>
+          <div class="chip">Active</div>
+          <div class="chip">Pending</div>
+          <div class="chip">Paused</div>
+          <div class="chip">Unsubscribed</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Frequency</label>
+        <div class="chips-select">
+          <div class="chip active">All</div>
+          <div class="chip">Monthly</div>
+          <div class="chip">Quarterly</div>
+          <div class="chip">Annually</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Client name</label>
+        <input class="form-input" type="text" placeholder="Search client..." />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Manager</label>
+        <input class="form-input" type="text" placeholder="Search manager..." />
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeFilter()">Reset</button>
+      <button class="btn btn-primary" style="flex:1" onclick="closeFilter()">Apply</button>
+    </div>
+  </div>
+
+  <!-- ==================== CLIENT MENU BOTTOM SHEET ==================== -->
+  <div class="bottom-sheet-overlay" id="menu-overlay" onclick="closeClientMenu()"></div>
+  <div class="bottom-sheet" id="menu-sheet" style="display:none;">
+    <div class="handle"></div>
+    <div class="sheet-body" style="padding-top:8px;">
+      <div style="padding:12px 0; cursor:pointer; font-size:15px; border-bottom:1px solid var(--border);" onclick="menuAction('edit')">✏️ &nbsp;Edit rebate</div>
+      <div style="padding:12px 0; cursor:pointer; font-size:15px; border-bottom:1px solid var(--border);" onclick="menuAction('settings')">⚙️ &nbsp;Client settings</div>
+      <div style="padding:12px 0; cursor:pointer; font-size:15px; border-bottom:1px solid var(--border);" onclick="menuAction('pay')">💰 &nbsp;Pay rebate</div>
+      <div style="padding:12px 0; cursor:pointer; font-size:15px; border-bottom:1px solid var(--border);" id="menu-pause-resume" onclick="menuAction('pause')">⏸ &nbsp;Pause rebate</div>
+      <div style="padding:12px 0; cursor:pointer; font-size:15px; border-bottom:1px solid var(--border);" onclick="menuAction('payments')">📋 &nbsp;View payments</div>
+      <div style="padding:12px 0; cursor:pointer; font-size:15px; color:var(--red);" onclick="menuAction('unsubscribe')">🚫 &nbsp;Unsubscribe</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const CLIENTS = [
+  { id: 1, name: 'Alfonso Siphron', subtitle: 'Company ABC Ltd', status: 'active', rate: '15%', type: 'Percentage', freq: 'Monthly', balance: '$4,520' },
+  { id: 2, name: 'Maria Johnson', subtitle: 'Tech Solutions Inc', status: 'active', rate: '12%', type: 'Percentage', freq: 'Monthly', balance: '$3,200' },
+  { id: 3, name: 'James Wilson', subtitle: 'Global Trade Co', status: 'pending', rate: '10%', type: 'Percentage', freq: 'Quarterly', balance: '$0' },
+  { id: 4, name: 'Sarah Chen', subtitle: 'Asia Partners', status: 'paused', rate: '$500', type: 'Fixed', freq: 'Monthly', balance: '$1,500' },
+  { id: 5, name: 'David Kim', subtitle: 'Kim & Associates', status: 'active', rate: '18%', type: 'Percentage', freq: 'Monthly', balance: '$8,750' },
+  { id: 6, name: 'Elena Petrova', subtitle: 'Eastern Markets', status: 'unsubscribed', rate: '10%', type: 'Percentage', freq: 'Quarterly', balance: '$2,100' },
+  { id: 7, name: 'Marcus Brown', subtitle: 'MB Financial', status: 'active', rate: '20%', type: 'Percentage', freq: 'Annually', balance: '$15,000' },
+  { id: 8, name: 'Lisa Park', subtitle: 'Pacific Ventures', status: 'setup', rate: '—', type: '—', freq: '—', balance: '$0' },
+  { id: 9, name: 'Tom Garcia', subtitle: 'Garcia Trading', status: 'active', rate: '14%', type: 'Percentage', freq: 'Monthly', balance: '$5,300' },
+  { id: 10, name: 'Anna Müller', subtitle: 'Euro Connect GmbH', status: 'paused', rate: '8%', type: 'Percentage', freq: 'Quarterly', balance: '$900' },
+];
+
+const PAYMENTS = [
+  { client: 'Alfonso Siphron', amount: '$1,250.00', date: 'Mar 15, 2026', status: 'completed' },
+  { client: 'Maria Johnson', amount: '$960.00', date: 'Mar 14, 2026', status: 'completed' },
+  { client: 'David Kim', amount: '$2,187.50', date: 'Mar 13, 2026', status: 'pending' },
+  { client: 'Marcus Brown', amount: '$3,000.00', date: 'Mar 10, 2026', status: 'completed' },
+  { client: 'Tom Garcia', amount: '$742.00', date: 'Mar 8, 2026', status: 'pending' },
+];
+
+let selectedClients = new Set();
+let currentClient = null;
+let navStack = ['screen-list'];
+
+function renderClientList() {
+  const list = document.getElementById('client-list');
+  const header = list.querySelector('.list-header');
+  list.innerHTML = '';
+  list.appendChild(header);
+
+  CLIENTS.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'client-card';
+    card.innerHTML = `
+      <div class="client-checkbox ${selectedClients.has(c.id) ? 'checked' : ''}" onclick="event.stopPropagation(); toggleClient(${c.id})">
+        ${selectedClients.has(c.id) ? '✓' : ''}
+      </div>
+      <div class="client-info" onclick="openClient(${c.id})">
+        <div class="client-name">${c.name}</div>
+        <div class="client-subtitle">${c.subtitle}</div>
+      </div>
+      <div class="client-end" onclick="openClient(${c.id})">
+        <span class="tag ${c.status}">${c.status.charAt(0).toUpperCase() + c.status.slice(1)}</span>
+        <span class="expand-icon">›</span>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function toggleClient(id) {
+  if (selectedClients.has(id)) selectedClients.delete(id);
+  else selectedClients.add(id);
+  updateSelection();
+  renderClientList();
+}
+
+function toggleSelectAll() {
+  if (selectedClients.size === CLIENTS.length) {
+    selectedClients.clear();
+  } else {
+    CLIENTS.forEach(c => selectedClients.add(c.id));
+  }
+  updateSelection();
+  renderClientList();
+}
+
+function updateSelection() {
+  const bar = document.getElementById('selection-bar');
+  const selectAll = document.getElementById('select-all');
+  if (selectedClients.size > 0) {
+    bar.style.display = 'flex';
+    document.getElementById('selected-count').textContent = selectedClients.size;
+  } else {
+    bar.style.display = 'none';
+  }
+  selectAll.className = `client-checkbox ${selectedClients.size === CLIENTS.length ? 'checked' : ''}`;
+  selectAll.innerHTML = selectedClients.size === CLIENTS.length ? '✓' : '';
+}
+
+function openClient(id) {
+  currentClient = CLIENTS.find(c => c.id === id);
+  renderClientDetail();
+  navigate('screen-client');
+}
+
+function renderClientDetail() {
+  if (!currentClient) return;
+  const c = currentClient;
+  const content = document.getElementById('client-detail-content');
+  content.innerHTML = `
+    <div class="detail-section">
+      <div class="detail-avatar">${c.name.charAt(0)}</div>
+      <div class="detail-name">${c.name}</div>
+      <div class="detail-id">${c.subtitle}</div>
+      <span class="tag ${c.status}" style="margin-bottom:16px;">${c.status.charAt(0).toUpperCase() + c.status.slice(1)}</span>
+    </div>
+    <div class="divider"></div>
+    <div class="section-title">Rebate Details</div>
+    <div style="padding:0 16px;">
+      <div class="info-row"><span class="info-label">Type</span><span class="info-value">${c.type}</span></div>
+      <div class="info-row"><span class="info-label">Rate</span><span class="info-value">${c.rate}</span></div>
+      <div class="info-row"><span class="info-label">Frequency</span><span class="info-value">${c.freq}</span></div>
+      <div class="info-row"><span class="info-label">Balance</span><span class="info-value" style="color:var(--green)">${c.balance}</span></div>
+    </div>
+    <div class="divider"></div>
+    <div class="section-title">Recent Payments</div>
+    <div style="padding:0 16px;">
+      ${PAYMENTS.filter(p => p.client === c.name).map(p => `
+        <div class="info-row">
+          <span class="info-label">${p.date}</span>
+          <span class="info-value">${p.amount} <span class="tag ${p.status}" style="margin-left:4px">${p.status}</span></span>
+        </div>
+      `).join('') || '<p style="padding:12px 0; color:var(--text-tertiary); font-size:14px;">No recent payments</p>'}
+    </div>
+  `;
+
+  const actions = document.getElementById('client-actions');
+  if (c.status === 'paused') {
+    actions.innerHTML = `
+      <button class="btn btn-primary" onclick="navigate('screen-resume')">Resume</button>
+      <button class="btn btn-secondary" onclick="navigate('screen-edit')">Edit</button>
+    `;
+  } else if (c.status === 'unsubscribed') {
+    actions.innerHTML = `
+      <button class="btn btn-primary" onclick="showSuccess('Subscribed!', '${c.name} has been resubscribed.')">Resubscribe</button>
+    `;
+  } else if (c.status === 'setup') {
+    actions.innerHTML = `
+      <button class="btn btn-primary" onclick="navigate('screen-settings')">Setup rebate</button>
+    `;
+  } else {
+    actions.innerHTML = `
+      <button class="btn btn-primary" onclick="navigate('screen-pay')">Pay rebate</button>
+      <button class="btn btn-secondary" onclick="navigate('screen-edit')">Edit</button>
+    `;
+  }
+
+  const menuBtn = document.getElementById('menu-pause-resume');
+  if (c.status === 'paused') {
+    menuBtn.innerHTML = '▶ &nbsp;Resume rebate';
+    menuBtn.setAttribute('onclick', "menuAction('resume')");
+  } else {
+    menuBtn.innerHTML = '⏸ &nbsp;Pause rebate';
+    menuBtn.setAttribute('onclick', "menuAction('pause')");
+  }
+
+  document.getElementById('pay-client-name').textContent = c.name;
+}
+
+function renderPayments() {
+  const list = document.getElementById('payments-list');
+  list.innerHTML = PAYMENTS.map(p => `
+    <div style="padding:14px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-size:14px; font-weight:500;">${p.client}</div>
+        <div style="font-size:12px; color:var(--text-secondary);">${p.date}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:14px; font-weight:600;">${p.amount}</div>
+        <span class="tag ${p.status}">${p.status.charAt(0).toUpperCase() + p.status.slice(1)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function navigate(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  if (navStack[navStack.length - 1] !== screenId) {
+    navStack.push(screenId);
+  }
+
+  if (screenId === 'screen-payments') renderPayments();
+  if (screenId === 'screen-pay' && currentClient) {
+    document.getElementById('pay-client-name').textContent = currentClient.name;
+  }
+  if (screenId === 'screen-resume' && currentClient) {
+    document.getElementById('resume-client-name').textContent = `Resume rebate for ${currentClient.name}?`;
+  }
+  if (screenId === 'screen-pause' && currentClient) {
+    document.getElementById('pause-client-name').textContent = `Pause rebate for ${currentClient.name}?`;
+  }
+}
+
+function goBack() {
+  navStack.pop();
+  const prev = navStack[navStack.length - 1] || 'screen-list';
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(prev).classList.add('active');
+}
+
+function openFilter() {
+  document.getElementById('filter-overlay').classList.add('active');
+  document.getElementById('filter-sheet').style.display = 'flex';
+}
+function closeFilter() {
+  document.getElementById('filter-overlay').classList.remove('active');
+  document.getElementById('filter-sheet').style.display = 'none';
+}
+
+function openClientMenu() {
+  document.getElementById('menu-overlay').classList.add('active');
+  document.getElementById('menu-sheet').style.display = 'flex';
+}
+function closeClientMenu() {
+  document.getElementById('menu-overlay').classList.remove('active');
+  document.getElementById('menu-sheet').style.display = 'none';
+}
+
+function menuAction(action) {
+  closeClientMenu();
+  if (action === 'edit') navigate('screen-edit');
+  else if (action === 'settings') navigate('screen-settings');
+  else if (action === 'pay') navigate('screen-pay');
+  else if (action === 'pause') navigate('screen-pause');
+  else if (action === 'resume') navigate('screen-resume');
+  else if (action === 'payments') navigate('screen-payments');
+  else if (action === 'unsubscribe') {
+    if (currentClient) {
+      currentClient.status = 'unsubscribed';
+      showSuccess('Unsubscribed', `${currentClient.name} has been unsubscribed from auto rebate.`);
+    }
+  }
+}
+
+function saveEdit() {
+  showSuccess('Saved!', 'Rebate settings have been updated successfully.');
+}
+
+function confirmPause() {
+  if (currentClient) {
+    currentClient.status = 'paused';
+    showSuccess('Paused', `Rebate for ${currentClient.name} has been paused.`);
+  }
+}
+
+function confirmResume() {
+  if (currentClient) {
+    currentClient.status = 'active';
+    showSuccess('Resumed!', `Rebate for ${currentClient.name} has been resumed.`);
+  }
+}
+
+function confirmPay() {
+  showSuccess('Payment sent!', `Rebate payment has been processed for ${currentClient?.name || 'the client'}.`);
+}
+
+function showSuccess(title, text) {
+  document.getElementById('success-title').textContent = title;
+  document.getElementById('success-text').textContent = text;
+  navigate('screen-success');
+}
+
+function showBulkAction(action) {
+  const count = selectedClients.size;
+  if (action === 'pause') {
+    showSuccess('Paused', `Rebates for ${count} clients have been paused.`);
+  } else if (action === 'pay') {
+    showSuccess('Payments sent!', `Rebate payments have been processed for ${count} clients.`);
+  }
+  selectedClients.clear();
+  updateSelection();
+  renderClientList();
+}
+
+// Interactive chips
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('chip') && e.target.closest('.chips-select, .chips-row')) {
+    const parent = e.target.closest('.chips-select, .chips-row');
+    parent.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    e.target.classList.add('active');
+  }
+});
+
+// Interactive tabs
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('tab')) {
+    const parent = e.target.closest('.tabs');
+    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+  }
+});
+
+// Init
+renderClientList();
+</script>
+
+</body>
+</html>
