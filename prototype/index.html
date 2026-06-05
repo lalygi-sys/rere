@@ -519,6 +519,270 @@ body.dp-open .tbl tbody tr.pinned-divider td{background:transparent}
 .empty .btn-secondary-s{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 16px;border:none;border-radius:8px;background:rgba(22,22,22,.15);color:var(--c-content-primary);font-family:inherit;font-size:14px;font-weight:600;line-height:20px;letter-spacing:0;cursor:pointer;transition:background .12s}
 .empty .btn-secondary-s:hover{background:rgba(22,22,22,.20)}
 .empty .btn-secondary-s:active{background:rgba(22,22,22,.25)}
+
+/* ============================================================
+   MOBILE — phone breakpoint (≤ 640px)
+   ============================================================
+   Re-thinks the desktop table into a vertical CARD LIST, drawer
+   panels into BOTTOM SHEETS, and the toolbar into a stacked
+   2-row layout. The existing `@media (max-width:1024px)` block
+   above handles tablets (left-side drawers, looser typography);
+   this block specializes for phones where a 7-column data grid
+   simply can't survive on a 360-px viewport.
+
+   Implementation note: this is CSS-only. We don't touch render()
+   — instead we set the table to `display:block`, hide <thead>,
+   and convert each <tr> into a CSS grid card. Cells become
+   block-level rows; their column meaning is restored by
+   `nth-child::before` labels. This keeps the JS rendering path
+   identical for desktop and mobile, so selection / sort / filter
+   logic doesn't fork.
+   ============================================================ */
+@media (max-width:640px){
+  /* Native page scroll (desktop sets overflow:hidden for the
+     single-viewport layout; the 1024 block already relaxes it,
+     but we re-assert here and enable iOS momentum scroll). */
+  html,body{overflow:auto;-webkit-overflow-scrolling:touch}
+  .screen,.screen.active{height:auto;min-height:100vh;overflow:visible}
+
+  /* === TOP NAV (compact 56px) ===
+     Drop the global site nav links (they belong in a separate
+     "more" sheet not in scope here), surface the page title
+     in their place via .page-heading (revealed in the tabs row),
+     and shrink the wallet pill. The wallet hides its "Wallet"
+     prefix on phones since the $-sign + balance carries enough
+     meaning and the saved width lets the avatar sit comfortably
+     in the right edge of the bar without crowding the right-side
+     touch zones. */
+  .topnav{height:56px;padding:0 12px;gap:8px}
+  .nav-links{display:none}
+  .logo{width:28px;height:28px;font-size:13px;border-radius:7px}
+  .wallet{padding:0 12px;font-size:13px;height:32px;font-size:0}
+  .wallet::before{content:'$ 0.00';font-size:13px;font-weight:600}
+  .avatar,.avatar svg{width:32px;height:32px}
+
+  /* === CONTENT WRAPPER ===
+     Edge-to-edge layout. Drop the inner card padding/border
+     since each row is now its own card. */
+  .content-wrap{padding:12px 12px 96px;background:var(--c-surface-container)}
+  .inner{padding:0;background:transparent;border-radius:0;overflow:visible}
+
+  /* === TABS ROW → 2 rows: title row, then segmented + search/export ===
+     Restores the H1 (hidden on desktop because tabs sit beside it),
+     turns the tabs into a Material-style segmented control sitting
+     full-width below the title, and pushes search/export to the
+     right end of the title row as 40px icon buttons. */
+  .tabs-row{flex-wrap:wrap;gap:12px;padding:8px 0 12px}
+  .page-heading{display:block;font-size:20px;line-height:26px;font-weight:600;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tabs-row .tabs{order:3;display:flex;width:100%;background:var(--c-surface-container);border-radius:10px;padding:4px;gap:0;align-self:stretch}
+  .tabs-row .tab-item{flex:1;min-width:0;height:36px;padding:0 8px;border-radius:8px;background:transparent;font-size:13px}
+  .tabs-row .tab-item::after{display:none}
+  .tabs-row .tab-item.active{background:#fff;color:var(--c-content-primary);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .tabs-right{order:2;margin-left:0;gap:0}
+  /* Search trigger collapses to a 40-px icon-only button on phones.
+     The text label inside .tabs-action is hidden when the wrapper
+     is rendered inside .tabs-right on mobile. */
+  .tabs-right .tabs-action{width:40px;height:40px;padding:0;gap:0;border-radius:8px;font-size:0}
+  .tabs-right .tabs-action svg{width:20px;height:20px}
+  .icon-btn-text-s{width:40px;height:40px}
+  /* Search field, when opened, floats below the 56-px topnav as a
+     full-width overlay with shadow. left/right insets match the
+     content-wrap horizontal padding so the field aligns with the
+     cards underneath. */
+  .search-input.open{width:auto;position:fixed;top:60px;left:12px;right:12px;z-index:60;height:40px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.12);border-radius:8px}
+
+  /* === TOOLBAR (row 1: Filters + Statistics; row 2: chips scroll) === */
+  .toolbar{flex-wrap:wrap;gap:8px;padding:12px 0;margin:0}
+  .toolbar .filter-btn{flex:0 0 auto;height:40px;padding:0 14px;font-size:14px}
+  .toolbar .date-range-wrap{flex:1 1 0;min-width:0}
+  .toolbar .date-range{width:100%;height:40px;padding:0 12px;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  /* Hide "Statistics" hint label on phone — the calendar icon + date span carries enough meaning, saves ~80px of width. */
+  .toolbar .date-range .dr-label{display:none}
+  .toolbar .date-range .dr-value{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Toolbar chips (status filter All / Setup required / etc) get a
+     right-edge fade mask to hint horizontal scrolling. Scoped via
+     `#chips` so the rebate-panel day chips (.rebate-days) and the
+     PM/AM toggle (.time-period) — which share the .chips-group
+     class — don't inherit the mask. Without this scope, the 7
+     day chips were getting their last item ("Sun") faded out
+     because the equal-width flex layout pushes the row right to
+     the container edge where the mask starts. */
+  #chips.chips-group{flex:1 1 100%;margin-left:0;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:2px 0;mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 24px),transparent 100%);-webkit-mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 24px),transparent 100%)}
+  #chips.chips-group::-webkit-scrollbar{display:none}
+  #chips .chip{flex-shrink:0}
+
+  /* === STATS (Manage payments screen) → vertical stack === */
+  .stats{flex-direction:column;gap:0;padding:0 0 12px}
+  .stat{padding:12px 0;border-right:none;border-bottom:1px solid var(--c-border);text-align:left}
+  .stat:last-child{border-bottom:none}
+  .stat-lbl{justify-content:flex-start}
+
+  /* === TABLE → VERTICAL CARD LIST ===
+     1. The <table> becomes a block flow.
+     2. Headers (<thead>) drop entirely — labels live on each card.
+     3. Each <tr> is a 2-column CSS grid card with a status pill
+        positioned at the top-right.
+     4. Cells become block rows; `nth-child::before` adds an UPPERCASE
+        micro-label so users still know "30.46 = Traded lots".
+     ============================================================== */
+  .table-layout{display:block;margin:0;background:transparent}
+  .table-card{display:block;border:none;background:transparent;overflow:visible;padding:0;margin:0}
+  /* `!important` on `display` is needed because render() sets
+     `tbl.style.display='table'` inline (to flip between the empty
+     state and the populated table), and inline styles win over
+     normal selector cascade. We don't want to fork render() just
+     for mobile — overriding here is the contained change. */
+  .tbl,#tbl-main,#s-manage .tbl{display:block!important;width:100%;min-width:0!important;table-layout:auto!important;border-collapse:separate}
+  .tbl thead{display:none}
+  .tbl tbody{display:block}
+
+  /* Card shell */
+  .tbl tbody tr{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    column-gap:16px;
+    row-gap:8px;
+    padding:14px 16px;
+    margin:0 0 8px;
+    background:var(--c-surface);
+    border:1px solid var(--c-border);
+    border-radius:12px;
+    position:relative;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .tbl tbody tr:active{background:var(--c-surface-container)}
+  /* Selected card uses a 2-px brand outline (via inset box-shadow,
+     so no layout shift from a thicker border). */
+  .tbl tbody tr.selected{background:#dae1ff;border-color:#1945ff;box-shadow:inset 0 0 0 1px #1945ff}
+  .tbl tbody tr.row-affected{border-color:rgba(227,45,45,.4)}
+  .tbl tbody tr.row-affected:hover td,
+  .tbl tbody tr:hover td,
+  .tbl tbody tr.row-affected td{background:transparent!important}
+
+  /* All td cells: block, transparent, no borders */
+  .tbl tbody td{display:block;padding:0;border:none;background:transparent!important;position:static!important;box-shadow:none!important}
+
+  /* td[1] = checkbox — hide; selection happens via card tap.
+     A future enhancement could surface a long-press multi-select
+     mode, but for now the bottom-bar already shows selection state. */
+  .tbl tbody td:nth-child(1){display:none}
+
+  /* td[2] = client name + sub-line. Spans both columns; reserve
+     ~120px on the right so the status pill (positioned absolutely
+     at top:14, right:16) doesn't overlap the name. */
+  .tbl tbody td:nth-child(2){grid-column:1/-1;padding-right:120px;min-height:40px}
+  .client-name{font-size:16px;line-height:22px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .client-sub{font-size:13px;line-height:18px;color:var(--c-content-tertiary);margin-top:2px}
+
+  /* td[3]/[4] = IB profit / Traded lots — 2-column metric row, with
+     a uppercase micro-label above each value. The top divider
+     separates "identity" (name) from "metrics" (numbers). */
+  .tbl tbody td:nth-child(3),
+  .tbl tbody td:nth-child(4){font-size:15px;font-weight:600;line-height:20px;color:var(--c-content-primary);padding-top:12px;margin-top:4px;border-top:1px solid var(--c-border)}
+  /* Labels — same visual style for every labelled cell. */
+  #tbl-main tbody td:nth-child(3)::before{content:'IB profit'}
+  #tbl-main tbody td:nth-child(4)::before{content:'Traded lots'}
+  #tbl-main tbody td:nth-child(5)::before{content:'Activity'}
+  #tbl-main tbody td:nth-child(6)::before{content:'Rebate settings'}
+  #s-manage .tbl tbody td:nth-child(3)::before{content:'Paid this period'}
+  #s-manage .tbl tbody td:nth-child(4)::before{content:'Accrued'}
+  #s-manage .tbl tbody td:nth-child(5)::before{content:'Rebate settings'}
+  #s-manage .tbl tbody td:nth-child(6)::before{content:'Next payment'}
+  .tbl tbody td:nth-child(3)::before,
+  .tbl tbody td:nth-child(4)::before,
+  .tbl tbody td:nth-child(5)::before,
+  .tbl tbody td:nth-child(6)::before{display:block;font-size:10px;line-height:14px;font-weight:600;color:var(--c-content-tertiary);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;font-feature-settings:normal}
+  .td-trend{margin-top:4px;font-size:12px;display:flex}
+  .td-sub{font-size:12px;line-height:16px;color:var(--c-content-tertiary);margin-top:2px;font-weight:400}
+
+  /* td[5] = Activity / join-date — left column on row 3 */
+  .tbl tbody td:nth-child(5){font-size:14px;font-weight:500;line-height:18px}
+
+  /* td[6] = Rebate settings / period — right column on row 3.
+     Smaller font (rebate settings often wrap to 2 lines, e.g.
+     "80% Auto weekly" + "Thu 09:00 AM, GMT-8"). */
+  .tbl tbody td:nth-child(6){font-size:13px;font-weight:500;line-height:18px;min-width:0;overflow:hidden}
+
+  /* td[7] = status + row actions. Status pill floats to the
+     top-right of the card; the action buttons span the full
+     bottom row as a divider-separated footer. */
+  .tbl tbody td:nth-child(7){grid-column:1/-1;display:block;margin-top:8px;padding-top:12px;border-top:1px solid var(--c-border)}
+  .tbl tbody td:nth-child(7) .status-default{position:absolute;top:14px;right:16px;display:inline-block!important}
+  /* On mobile the row-action buttons are always visible (there is no
+     :hover concept), not gated behind menu-open / hover states. */
+  .tbl tbody td:nth-child(7) .row-actions{display:flex!important;width:100%;margin:0;gap:8px;align-items:stretch;justify-content:stretch;flex-direction:row;align-self:stretch}
+  .tbl tbody td:nth-child(7) .row-actions .btn-sm{flex:1 1 auto;min-width:0;height:40px;padding:0 12px}
+  /* Drop the desktop secondary icon cluster (info + statistics).
+     These actions are reached via the kebab dropdown instead. */
+  .tbl tbody td:nth-child(7) .row-actions .row-action-icons{display:none}
+  .tbl tbody td:nth-child(7) .row-actions .row-action-more{display:inline-flex!important;width:40px;height:40px;flex:0 0 40px}
+  .tbl tbody td:nth-child(7) .row-actions .row-action-more svg{width:20px;height:20px}
+
+  /* Pinned divider becomes a thin section header inside the card list */
+  .tbl tbody tr.pinned-divider{display:block;padding:8px 0;margin:0;background:transparent;border:none;border-radius:0;cursor:default}
+  .tbl tbody tr.pinned-divider td{padding:0;display:block}
+  .tbl tbody tr.pinned-divider .pd-label{padding:0;margin:0;font-size:11px}
+
+  /* === BOTTOM SHEETS for FILTER / DATE / REBATE panels ===
+     The tablet block (≤1024) already converts these to fixed
+     left-side drawers. Here we re-position them as bottom sheets
+     anchored to bottom:0 with a slide-up transform. The drag
+     handle is decorative (no JS gesture); ESC and tap-outside
+     still close. max-height 92vh leaves a hint of the underlying
+     content so users keep context (Material BottomSheet pattern). */
+  .filter-panel,.rebate-panel{
+    position:fixed!important;top:auto!important;left:0!important;right:0!important;bottom:0!important;
+    width:100%!important;max-width:none!important;height:auto!important;max-height:92vh;
+    border-radius:16px 16px 0 0!important;border:none!important;
+    transform:translateY(100%);transition:transform .28s cubic-bezier(.22,1,.36,1),opacity .2s ease;
+    box-shadow:0 -8px 32px rgba(0,0,0,.18)!important;
+    margin:0!important;flex:none!important;opacity:1!important;
+    z-index:95;
+  }
+  .filter-panel.open,.rebate-panel.open{transform:translateY(0);width:100%!important;margin:0!important;flex:none!important}
+  .filter-panel-inner,.rebate-panel-inner{width:100%!important;max-width:none!important;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+  /* Drag-handle pill (decorative — see comment above).
+     Higher opacity + thinner+wider pill matches iOS/Material
+     conventions. z-index:2 keeps it above the header content
+     even when the panel scrolls. */
+  .filter-panel::before,.rebate-panel::before{content:'';position:absolute;top:6px;left:50%;transform:translateX(-50%);width:40px;height:5px;border-radius:3px;background:#c6c6c6;z-index:2;pointer-events:none}
+  .filter-panel-header{padding-top:24px}
+  .filter-panel-scroll{flex:1 1 auto;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,16px);-webkit-overflow-scrolling:touch}
+  .filter-panel-footer{padding-bottom:max(16px,env(safe-area-inset-bottom,16px))}
+  /* Rebate panel: stack 2-up field rows vertically so each label
+     gets the full width (avoids cramped 50/50 split at <640). */
+  .field-row{flex-direction:column;gap:16px;margin-bottom:16px}
+
+  /* === BOTTOM BAR (selection) ===
+     Already adapts at 720px (stacks buttons). Here we go edge-to-edge,
+     drop the floating margin, and add iOS safe-area padding. */
+  .bottom-bar{left:0!important;right:0!important;bottom:0!important;transform:none;border-radius:16px 16px 0 0;max-width:none;margin:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 16px rgba(0,0,0,.12);gap:12px}
+  /* Reserve space so cards aren't covered by the bar. Stacked layout
+     means 3 secondary buttons + 1 primary can be ~5 rows tall — but
+     selectionly-renderered actions cap at 3, so worst-case height
+     ≈ 56 (header) + 3*40 + 2*8 = 192. Round up to 200. */
+  .table-layout.has-bb{margin-bottom:204px}
+
+  /* === EMPTY STATE: stacked CTA buttons, narrower illustration === */
+  .empty{padding:48px 16px;gap:20px;min-height:240px}
+  .empty .empty-illu{width:88px;height:88px}
+  .empty .empty-illu img{width:72px;height:56px}
+  .empty .empty-actions{flex-direction:column;width:100%;gap:8px}
+  .empty .empty-actions .btn-primary,
+  .empty .empty-actions .btn-secondary,
+  .empty .empty-actions .btn-secondary-s{width:100%;height:44px}
+
+  /* === ROW-ACTION DROPDOWN MENU (kebab on each card) ===
+     Already position:fixed (portalled to body), so no positioning
+     fix needed. Just make sure tap targets are big enough. */
+  .row-action-menu{min-width:220px}
+  .ram-item{height:44px}
+
+  /* Tooltip — anchor to the tap target; max-width narrower to
+     stay inside the viewport on small screens. */
+  .tooltip{max-width:calc(100vw - 32px)}
+}
 </style>
 </head>
 <body>
