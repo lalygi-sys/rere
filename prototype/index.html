@@ -529,6 +529,39 @@ body.dp-open .tbl tbody tr.pinned-divider td{background:transparent}
 .empty .btn-secondary-s:active{background:rgba(22,22,22,.25)}
 
 /* ============================================================
+   TABLET — toolbar wrap (≤ 1024px)
+   ============================================================
+   Filters + Date range + status filter chips share a single
+   flex row. At desktop widths everything fits comfortably, but
+   below ~1024px the chips group (which needs ~556px for all
+   four chips with counts) collides with the date range (~340px)
+   and Filters button (~110px). With the base `flex-wrap:nowrap`
+   the chips overflow the right edge of the toolbar and the
+   rightmost chip ("Paused rebate") gets clipped without a
+   scroll affordance.
+
+   This block — placed AFTER the base `.toolbar` rule on purpose,
+   so source order beats the earlier `(max-width:1024px)` block —
+   wraps the chips group onto its own second row at full width,
+   then lets it scroll horizontally inside that row with a
+   right-edge fade mask hinting at more content. The pattern
+   matches the mobile (≤640px) implementation; we just couldn't
+   reuse it directly because the base `.chips-group{margin-left:
+   auto}` rule lives further down in the cascade than the earlier
+   media block, so any property we set there gets overridden.
+
+   Scoped via `#chips` so the rebate-panel day-of-week chips
+   (.rebate-days) and the PM/AM toggle (.time-period) — which
+   share the .chips-group class — don't inherit this layout.
+   ============================================================ */
+@media (max-width:1024px){
+  .toolbar{flex-wrap:wrap;row-gap:12px}
+  #chips.chips-group{flex:1 1 100%;margin-left:0;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:2px 0;mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 24px),transparent 100%);-webkit-mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 24px),transparent 100%)}
+  #chips.chips-group::-webkit-scrollbar{display:none}
+  #chips .chip{flex-shrink:0}
+}
+
+/* ============================================================
    MOBILE — phone breakpoint (≤ 640px)
    ============================================================
    Re-thinks the desktop table into a vertical CARD LIST, drawer
