@@ -70,7 +70,15 @@ button{font-family:inherit;cursor:pointer}
   .screen,.screen.active{height:auto;overflow:visible}
   .content-wrap{display:block}
   .inner{flex:none;height:auto;max-height:none;overflow:visible;display:block}
-  .table-card{flex:none;overflow:visible}
+  /* On tablet (≤1024px) we want the whole page to scroll vertically
+     instead of pinning the table's height — so we turn off vertical
+     overflow on the card. But horizontal overflow must stay `auto`,
+     otherwise the table (which has min-width:960px to keep columns
+     legible) gets clipped by ancestors and the user has no way to
+     reach the right-hand columns. Earlier this was `overflow:visible`
+     for both axes, which broke horizontal scrolling between ~640px
+     and 1024px viewports. */
+  .table-card{flex:none;overflow-x:auto;overflow-y:visible}
   .tbl thead{position:static}
   .page-heading{font-size:18px;line-height:24px}
   .tabs-row{gap:20px}
